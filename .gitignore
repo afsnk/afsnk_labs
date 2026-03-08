@@ -1,0 +1,5 @@
+afsnk_labs.zip
+node_modules
+**/node_modules
+**/dist
+tsconfig.tsbuildinfo

@@ -1,0 +1,31 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "payment-modal",
+  "title": "Payment Modal",
+  "description": "A custom payment modal with card input, amount display, confirmation flow and useful hooks.",
+  "dependencies": [
+    "zod",
+    "react-hook-form",
+    "@hookform/resolvers"
+  ],
+  "registryDependencies": [
+    "dialog",
+    "button",
+    "input",
+    "label",
+    "card"
+  ],
+  "files": [
+    {
+      "path": "registry/default/afsnk/stablecoin-payment/stablecoin-payment-modal.tsx",
+      "content": "import { StablecoinPaymentModal } from \"@afsnk/ui\";\n\ninterface StablecoinPaymentModalProps {\n  isOpen: boolean;\n  onOpenChange: (open: boolean) => void;\n  amount?: number;\n  currency?: string;\n  onConnect?: () => void | Promise<void>;\n}\n\nexport function StablePayModal(props: StablecoinPaymentModalProps) {\n  return <StablecoinPaymentModal {...props} />;\n}\n",
+      "type": "registry:component"
+    },
+    {
+      "path": "registry/default/afsnk/stablecoin-payment/use-payment.tsx",
+      "content": "import { useState, useCallback } from \"react\";\n\ninterface UsePaymentOptions {\n  onSuccess?: () => void;\n  onError?: (err: unknown) => void;\n}\n\nexport function usePayment(options?: UsePaymentOptions) {\n  const [open, setOpen] = useState(false);\n  const [amount, setAmount] = useState(0);\n  const [currency, setCurrency] = useState(\"USD\");\n\n  const openPayment = useCallback(\n    (chargeAmount: number, chargeCurrency = \"USD\") => {\n      setAmount(chargeAmount);\n      setCurrency(chargeCurrency);\n      setOpen(true);\n    },\n    [],\n  );\n\n  const closePayment = useCallback(() => {\n    setOpen(false);\n  }, []);\n\n  return {\n    open,\n    setOpen,\n    amount,\n    currency,\n    openPayment,\n    closePayment,\n    onSuccess: options?.onSuccess,\n    onError: options?.onError,\n  };\n}\n",
+      "type": "registry:hook"
+    }
+  ],
+  "type": "registry:component"
+}

@@ -1,0 +1,13 @@
+src/
+tsconfig.json
+tsup.config.ts
+.eslintrc.json
+.prettierrc
+*.test.ts
+*.spec.ts
+__tests__/
+coverage/
+.turbo/
+node_modules/
+.DS_Store
+*.log
