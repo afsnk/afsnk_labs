@@ -9,6 +9,8 @@
     "build": "pnpm -r --filter ./packages build",
     "build:npm": "pnpm -C packages/npm build",
     "build:registry": "pnpm -C packages/registry build",
+    "build:packages:server": "pnpm --filter @afsnk/pay-server build",
+    "start:packages:server": "pnpm --filter @afsnk/pay-server start",
     "start": "pnpm -C packages/demo start",
     "lint": "pnpm -r lint",
     "publish:npm": "pnpm -C packages/npm publish --access public",
@@ -31,6 +33,7 @@
     "url": "https://github.com/afsnk/afsnk_labs.git"
   },
   "dependencies": {
+    "@better-fetch/fetch": "^1.1.21",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "tailwindcss": "^4.1.18",
