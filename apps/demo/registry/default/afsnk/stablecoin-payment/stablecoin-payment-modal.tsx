@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -13,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Check, CheckCircle, Copy, Wallet } from "lucide-react";
+import { Check, CheckCircle, Copy, Wallet, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useQuery } from "@tanstack/react-query";
@@ -22,6 +23,7 @@ import { betterFetch } from "@better-fetch/fetch";
 interface StablecoinPaymentModalProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
+  onPaymentFinished: (result: any) => void;
   amount?: number;
   currency?: string;
   apiUrl: string;
@@ -44,6 +46,7 @@ export function StablePayModal({
   amount,
   isOpen,
   onOpenChange,
+  onPaymentFinished,
   currency,
   apiUrl,
   callbackUrl,
@@ -56,8 +59,6 @@ export function StablePayModal({
   const [copied, setCopied] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [paymentMade, setPaymentMade] = useState(false);
-
-  const queryClient = useQueryClient();
 
   useEffect(() => {
     console.log("Reference", { reference });
@@ -96,17 +97,6 @@ export function StablePayModal({
           throw error;
         }
         return data;
-        // const response = await fetch(`${apiUrl}/payment/init`, {
-        //   method: "POST",
-        //   body: values,
-        // });
-        // if (response.ok) {
-        //   const json = await response.json();
-        //   return json;
-        // } else {
-        //   console.log(`Response`, { response });
-        //   throw new Error("Request failed to confirm payment");
-        // }
       } catch (error: any) {
         console.log("Failed to make request", { error });
         throw error;
@@ -141,6 +131,12 @@ export function StablePayModal({
     },
     enabled: paymentMade,
   });
+
+  useEffect(() => {
+    if (paymentConfirm.data) {
+      onPaymentFinished(paymentConfirm.data);
+    }
+  }, [paymentConfirm.data]);
   // Generate address when network or stablecoin changes
   useEffect(() => {
     setCopied(false);
@@ -172,7 +168,11 @@ export function StablePayModal({
     STABLECOINS.find((s) => s.id === selectedStablecoin)?.symbol || "USDC";
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={onOpenChange}
+      disablePointerDismissal={true}
+    >
       <DialogContent className="max-w-md w-full border-0 shadow-2xl">
         <DialogHeader className="space-y-1">
           <DialogTitle className="text-2xl font-semibold">
@@ -307,7 +307,7 @@ export function StablePayModal({
         {paymentInit.data && (
           <>
             {/* Connect Wallet Button */}
-            <Button
+            {/*<Button
               onClick={handleConnectWallet}
               disabled={isConnecting}
               className="w-full h-11 bg-accent hover:bg-accent/90 text-accent-foreground font-semibold rounded-lg transition-all active:scale-95"
@@ -323,10 +323,10 @@ export function StablePayModal({
                   <span>Connect Wallet</span>
                 </div>
               )}
-            </Button>
+            </Button>*/}
             <Button
               onClick={() => setPaymentMade((_prev) => !_prev)}
-              disabled={isConnecting}
+              disabled={paymentConfirm.isLoading}
               className="w-full h-11 bg-accent hover:bg-accent/90 text-accent-foreground font-semibold rounded-lg transition-all active:scale-95"
             >
               <div className="flex items-center gap-2">

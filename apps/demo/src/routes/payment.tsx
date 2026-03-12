@@ -49,6 +49,9 @@ function RouteComponent() {
           reference={paymentRef.current}
           isOpen={isOpen}
           onOpenChange={setIsOpen}
+          onPaymentFinished={(result) =>
+            console.log("Result from finished transaction", { result })
+          }
           amount={0.06}
         />
       </section>
