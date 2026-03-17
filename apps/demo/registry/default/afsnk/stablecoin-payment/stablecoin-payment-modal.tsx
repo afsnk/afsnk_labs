@@ -177,6 +177,7 @@ export function StablePayModal({
     setPaymentMade(false);
     paymentInit.reset();
   }, [selectedNetwork, selectedStablecoin]);
+  const convertedAmount = amount ? amount / 1365 : 0;
 
   const handleCopyAddress = () => {
     if (paymentInit.data) {
@@ -223,6 +224,7 @@ export function StablePayModal({
           "step-1": () => (
             <ConfigSelect
               amount={amount}
+              convertedAmount={convertedAmount}
               currency={currency}
               selectedNetwork={selectedNetwork}
               onNetworkSelect={setSelectedNetwork}
@@ -236,6 +238,7 @@ export function StablePayModal({
           "step-2": () => (
             <Deposit
               amount={amount}
+              convertedAmount={convertedAmount}
               currency={currency}
               networkName={selectedNetwork}
               stablecoinSymbol={selectedStablecoin}
@@ -325,6 +328,7 @@ const parseToSeconds = (h, m, s) =>
 
 function Deposit({
   amount,
+  convertedAmount,
   currency,
   copied,
   stablecoinSymbol,
@@ -445,14 +449,14 @@ function Deposit({
               <div className="flex space-x-0.5 items-center justify-center w-full">
                 <span className="text-sm font-normal">Pay exactly</span>
                 <h1 className="text-3xl font-semibold">
-                  {amount} {stablecoinSymbol.toUpperCase()}
+                  {convertedAmount.toFixed(2)} {stablecoinSymbol.toUpperCase()}
                 </h1>
                 <Button variant="outline" size="icon-sm">
                   <Copy className="size-4" />
                 </Button>
               </div>
               <span className="text-xs font-normal text-center text-muted-foreground">
-                {amount * 1400} NGN
+                ~{amount} {currency}
               </span>
               <Badge>
                 Network: {stablecoinSymbol.toUpperCase()}-
@@ -526,6 +530,7 @@ function ConfigSelect({
   selectedAsset,
   onAssetSelected,
   amount,
+  convertedAmount,
   currency,
   paymentInit,
   reference,
@@ -537,10 +542,10 @@ function ConfigSelect({
         <CardContent>
           <span className="text-sm font-normal">Amount to pay</span>
           <h1 className="text-3xl font-semibold">
-            {amount} {currency}
+            {convertedAmount.toFixed(2)} {selectedAsset.toUpperCase()}
           </h1>
           <span className="text-xs font-normal text-muted-foreground">
-            {amount * 1400} NGN
+            ~{amount} {currency}
           </span>
         </CardContent>
       </Card>

@@ -16,7 +16,10 @@
         "@better-fetch/fetch",
         "@base-ui/react",
         "@hugeicons/core-free-icons",
-        "@hugeicons/react"
+        "@hugeicons/react",
+        "lucide-react",
+        "@stepperize/react",
+        "react-qr-code"
       ],
       "registryDependencies": [
         "dialog",
@@ -25,7 +28,13 @@
         "label",
         "card",
         "sonner",
-        "select"
+        "select",
+        "item",
+        "drawer",
+        "badge",
+        "spinner",
+        "alert",
+        "hover-card"
       ],
       "files": [
         {
@@ -34,6 +43,14 @@
         },
         {
           "path": "registry/default/afsnk/stablecoin-payment/use-payment.tsx",
+          "type": "registry:hook"
+        },
+        {
+          "path": "registry/default/afsnk/stablecoin-payment/components/ui/credenza.tsx",
+          "type": "registry:component"
+        },
+        {
+          "path": "registry/default/afsnk/stablecoin-payment/use-media-query.tsx",
           "type": "registry:hook"
         }
       ]

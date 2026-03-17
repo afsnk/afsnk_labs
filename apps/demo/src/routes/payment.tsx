@@ -25,7 +25,7 @@ function RouteComponent() {
       <section className="island-shell rounded-2xl p-6 sm:p-8">
         <p className="island-kicker mb-2">Payment</p>
         <h1 className="display-title mb-3 text-4xl font-bold text-[var(--sea-ink)] sm:text-5xl">
-          A small payemnt modal.
+          A small payment modal.
         </h1>
         <p className="m-0 max-w-3xl text-base leading-8 text-[var(--sea-ink-soft)]">
           A small payment modal to collect and confirm payment
@@ -49,7 +49,8 @@ function RouteComponent() {
             console.log("Result from finished transaction", { result });
             setIsOpen(false);
           }}
-          amount={0.06}
+          currency="NGN"
+          amount={40000}
         />
       </section>
     </main>
