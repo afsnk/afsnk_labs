@@ -337,7 +337,7 @@ function Deposit({
   const [intervalValue, setIntervalValue] = useState<number>(1000);
   const [count, { startCountdown, stopCountdown, resetCountdown }] =
     useCountdown({
-      countStart: 10,
+      countStart: 300,
       intervalMs: intervalValue,
     });
 
