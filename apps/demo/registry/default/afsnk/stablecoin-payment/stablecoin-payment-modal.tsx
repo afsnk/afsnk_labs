@@ -49,6 +49,7 @@ import QRCode from "react-qr-code";
 import { Spinner } from "@/components/ui/spinner";
 import { useCountdown } from "@/hooks/use-countdown";
 import { cn } from "@/lib/utils";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const { useStepper } = defineStepper(
   { id: "step-1", title: "Choose Asset" },
@@ -221,52 +222,54 @@ export function StablePayModal({
       disablePointerDismissal={true}
     >
       <CredenzaContent className="sm:max-w-md max-w-lg w-full border-0 shadow-2xl">
-        <CredenzaHeader className="space-y-1">
-          <CredenzaTitle className="text-2xl font-semibold">
-            Complete payment
-          </CredenzaTitle>
-          <CredenzaDescription className="text-sm text-muted-foreground">
-            Select the blockchain network and token you want to use to complete
-            this payment.
-          </CredenzaDescription>
-        </CredenzaHeader>
-        <NavHeader />
+        <ScrollArea className="h-[400px] p-2 sm:p-4">
+          <CredenzaHeader className="space-y-1">
+            <CredenzaTitle className="text-2xl font-semibold">
+              Complete payment
+            </CredenzaTitle>
+            <CredenzaDescription className="text-sm text-muted-foreground">
+              Select the blockchain network and token you want to use to
+              complete this payment.
+            </CredenzaDescription>
+          </CredenzaHeader>
+          <NavHeader />
 
-        {stepper.flow.switch({
-          "step-1": () => (
-            <ConfigSelect
-              amount={amount}
-              convertedAmount={convertedAmount}
-              currency={currency}
-              selectedNetwork={selectedNetwork}
-              onNetworkSelect={setSelectedNetwork}
-              selectedAsset={selectedStablecoin}
-              onAssetSelected={setSelectedStablecoin}
-              paymentInit={paymentInit}
-              reference={reference}
-              callbackUrl={callbackUrl}
-            />
-          ),
-          "step-2": () => (
-            <Deposit
-              amount={amount}
-              convertedAmount={convertedAmount}
-              currency={currency}
-              networkName={selectedNetwork}
-              stablecoinSymbol={selectedStablecoin}
-              onCopyAddress={handleCopyAddress}
-              copied={copied}
-              paymentAddress={paymentAddress}
-              paymentInit={paymentInit}
-              paymentConfirm={paymentConfirm}
-              onPaymentMade={setPaymentMade}
-              onTimerEnd={() => {
-                paymentInit?.reset();
-                stepper.navigation.goTo("step-1");
-              }}
-            />
-          ),
-        })}
+          {stepper.flow.switch({
+            "step-1": () => (
+              <ConfigSelect
+                amount={amount}
+                convertedAmount={convertedAmount}
+                currency={currency}
+                selectedNetwork={selectedNetwork}
+                onNetworkSelect={setSelectedNetwork}
+                selectedAsset={selectedStablecoin}
+                onAssetSelected={setSelectedStablecoin}
+                paymentInit={paymentInit}
+                reference={reference}
+                callbackUrl={callbackUrl}
+              />
+            ),
+            "step-2": () => (
+              <Deposit
+                amount={amount}
+                convertedAmount={convertedAmount}
+                currency={currency}
+                networkName={selectedNetwork}
+                stablecoinSymbol={selectedStablecoin}
+                onCopyAddress={handleCopyAddress}
+                copied={copied}
+                paymentAddress={paymentAddress}
+                paymentInit={paymentInit}
+                paymentConfirm={paymentConfirm}
+                onPaymentMade={setPaymentMade}
+                onTimerEnd={() => {
+                  paymentInit?.reset();
+                  stepper.navigation.goTo("step-1");
+                }}
+              />
+            ),
+          })}
+        </ScrollArea>
       </CredenzaContent>
     </Credenza>
   );
@@ -280,24 +283,22 @@ function NavHeader() {
     <div className="flex w-full items-center">
       <div className="grid place-items-center">
         <Wallet
-          className={cn("w-5 h-5", {
+          className={cn("w-5 h-5 text-primary", {
             isStep1: "text-primary",
           })}
         />
-        <span className={cn({ isStep1: "text-primary" })}>Choose asset</span>
+        <span className={cn("text-primary", { isStep1: "text-primary" })}>
+          Choose asset
+        </span>
       </div>
       <div className="h-0.5 rounded-2xl w-[150px] mx-auto bg-white" />
       <div className="grid place-items-center">
         <Send
-          className={cn("w-5 h-5", {
+          className={cn("w-5 h-5 text-primary", {
             isStep2: "text-primary",
           })}
         />
-        <span
-          className={cn({
-            isStep2: "text-primary",
-          })}
-        >
+        <span className={cn("text-primary", { isStep2: "text-primary" })}>
           Send deposit
         </span>
       </div>
@@ -356,7 +357,7 @@ function Deposit({
     <div className="space-y-6 py-4">
       <Item>
         <ItemContent>
-          <ItemTitle>Awaiting payment</ItemTitle>
+          <ItemTitle className="text-primary">Awaiting payment</ItemTitle>
           <ItemDescription>Send exact amount to avoid delays</ItemDescription>
         </ItemContent>
         <ItemActions>
@@ -398,9 +399,9 @@ function Deposit({
           </Alert>
           {/* Payment Address Section */}
           <div className="space-y-3 pt-2">
-            <Item variant="muted" className="bg-muted-foreground">
+            <Item variant="muted" className="bg-muted">
               <ItemContent>
-                <ItemTitle>Payment address</ItemTitle>
+                <ItemTitle className="text-primary">Payment address</ItemTitle>
                 <HoverCard>
                   <HoverCardTrigger
                     delay={10}
@@ -436,7 +437,7 @@ function Deposit({
                   {copied ? (
                     <Check className="w-5 h-5 text-accent" />
                   ) : (
-                    <Copy className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors" />
+                    <Copy className="w-5 h-5 text-accent hover:text-foreground transition-colors" />
                   )}
                 </Button>
               </ItemActions>
@@ -528,7 +529,7 @@ function ConfigSelect({
         </Label>
         <Select value={selectedAsset} onValueChange={onAssetSelected}>
           <SelectTrigger className="h-24 w-full border border-border bg-background hover:border-accent transition-colors">
-            <SelectValue />
+            <SelectValue className="text-primary" />
           </SelectTrigger>
           <SelectContent>
             {STABLECOINS.map((coin) => (
@@ -553,14 +554,14 @@ function ConfigSelect({
         </Label>
         <Select value={selectedNetwork} onValueChange={onNetworkSelect}>
           <SelectTrigger className="h-20 w-full border border-border bg-background hover:border-accent transition-colors">
-            <SelectValue />
+            <SelectValue className="text-primary" />
           </SelectTrigger>
           <SelectContent>
             {NETWORKS.map((network) => (
               <SelectItem key={network.id} value={network.id}>
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-accent" />
-                  <span>{network.name}</span>
+                  <span className="text-primary">{network.name}</span>
                 </div>
               </SelectItem>
             ))}
