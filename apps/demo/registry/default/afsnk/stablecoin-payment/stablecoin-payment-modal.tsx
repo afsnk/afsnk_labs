@@ -221,7 +221,7 @@ export function StablePayModal({
       onOpenChange={onOpenChange}
       disablePointerDismissal={true}
     >
-      <CredenzaContent className="sm:max-w-md max-w-lg w-full border-0 shadow-2xl">
+      <CredenzaContent className="sm:max-w-md max-w-lg w-full border-0 shadow-2xl p-0">
         <ScrollArea className="h-[400px] p-2 sm:p-4">
           <CredenzaHeader className="space-y-1">
             <CredenzaTitle className="text-2xl font-semibold">
@@ -283,24 +283,20 @@ function NavHeader() {
     <div className="flex w-full items-center">
       <div className="grid place-items-center">
         <Wallet
-          className={cn("w-5 h-5 text-primary", {
-            isStep1: "text-primary",
+          className={cn("w-5 h-5", {
+            "text-primary": isStep1,
           })}
         />
-        <span className={cn("text-primary", { isStep1: "text-primary" })}>
-          Choose asset
-        </span>
+        <span className={cn({ "text-primary": isStep1 })}>Choose asset</span>
       </div>
-      <div className="h-0.5 rounded-2xl w-[150px] mx-auto bg-white" />
+      <div className="h-0.5 rounded-2xl w-[150px] mx-auto dark:bg-white bg-primary" />
       <div className="grid place-items-center">
         <Send
-          className={cn("w-5 h-5 text-primary", {
-            isStep2: "text-primary",
+          className={cn("w-5 h-5", {
+            "text-primary": isStep2,
           })}
         />
-        <span className={cn("text-primary", { isStep2: "text-primary" })}>
-          Send deposit
-        </span>
+        <span className={cn({ "text-primary": isStep2 })}>Send deposit</span>
       </div>
     </div>
   );
