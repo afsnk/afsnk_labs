@@ -398,7 +398,7 @@ function Deposit({
           </Alert>
           {/* Payment Address Section */}
           <div className="space-y-3 pt-2">
-            <Item>
+            <Item variant="muted" className="bg-muted-foreground">
               <ItemContent>
                 <ItemTitle>Payment address</ItemTitle>
                 <HoverCard>
@@ -406,7 +406,7 @@ function Deposit({
                     delay={10}
                     closeDelay={100}
                     render={
-                      <ItemDescription>
+                      <ItemDescription className="text-primary">
                         {paymentInit?.data?.addresss ?? paymentAddress}
                       </ItemDescription>
                     }
