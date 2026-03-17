@@ -34,7 +34,8 @@
         "badge",
         "spinner",
         "alert",
-        "hover-card"
+        "hover-card",
+        "scroll-area"
       ],
       "files": [
         {
