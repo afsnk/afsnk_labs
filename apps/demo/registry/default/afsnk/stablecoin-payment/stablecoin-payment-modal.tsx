@@ -357,7 +357,7 @@ export function StablePayModal({
             </CredenzaDescription>
           </CredenzaHeader>
 
-          <NavHeader />
+          <NavHeader step={stepper.state.current.data.id} />
 
           {stepper.flow.switch({
             "step-1": () => (
@@ -400,10 +400,9 @@ export function StablePayModal({
 // ─── NavHeader ────────────────────────────────────────────────────────────────
 // Memoised: only depends on stepper state, never on payment state.
 
-const NavHeader = memo(function NavHeader() {
-  const stepper = useStepper();
-  const isStep1 = stepper.flow.is("step-1");
-  const isStep2 = stepper.flow.is("step-2");
+const NavHeader = memo(function NavHeader({ step }: any) {
+  const isStep1 = step === "step-1";
+  const isStep2 = step === "step-2";
 
   return (
     <div className="flex w-full items-center">
@@ -476,7 +475,7 @@ const Deposit = memo(function Deposit({
     <div className="space-y-6 py-4">
       <Item>
         <ItemContent>
-          <ItemTitle className="text-primary">Awaiting payment</ItemTitle>
+          <ItemTitle>Awaiting payment</ItemTitle>
           <ItemDescription>Send exact amount to avoid delays</ItemDescription>
         </ItemContent>
         <ItemActions>
@@ -525,13 +524,17 @@ const Deposit = memo(function Deposit({
             <HoverCard>
               <HoverCardTrigger
                 delay={10}
-                closeDelay={100}
-                render={
+                asChild
+                render={() => (
                   <ItemDescription className="text-primary">
                     {resolvedAddress}
                   </ItemDescription>
-                }
-              />
+                )}
+              >
+                <ItemDescription className="text-primary">
+                  {resolvedAddress}
+                </ItemDescription>
+              </HoverCardTrigger>
               <HoverCardContent className="flex w-64 flex-col gap-0.5">
                 <QRCode
                   size={256}
@@ -551,9 +554,9 @@ const Deposit = memo(function Deposit({
               aria-label="Copy address"
             >
               {copied ? (
-                <Check className="w-5 h-5 text-accent" />
+                <Check className="w-5 h-5 text-primary" />
               ) : (
-                <Copy className="w-5 h-5 text-accent hover:text-foreground transition-colors" />
+                <Copy className="w-5 h-5 text-primary hover:text-foreground transition-colors" />
               )}
             </Button>
           </ItemActions>
@@ -580,13 +583,6 @@ const Deposit = memo(function Deposit({
           </span>
         </div>
       </Button>
-
-      <p className="text-xs text-center text-muted-foreground pt-2">
-        Don't have a wallet?{" "}
-        <button className="text-accent hover:underline font-medium">
-          Learn more
-        </button>
-      </p>
     </div>
   );
 });
