@@ -56,7 +56,7 @@ npm install @stablecoin/payment-modal
 #### Usage
 
 ```tsx
-import { StablecoinPaymentModal } from '@stablecoin/payment-modal';
+import { StablecoinPaymentModal } from "@stablecoin/payment-modal";
 
 export default function App() {
   const [isOpen, setIsOpen] = useState(false);
@@ -64,7 +64,7 @@ export default function App() {
   return (
     <>
       <button onClick={() => setIsOpen(true)}>Pay</button>
-      <StablecoinPaymentModal 
+      <StablecoinPaymentModal
         isOpen={isOpen}
         onOpenChange={setIsOpen}
         amount={100}
@@ -77,6 +77,7 @@ export default function App() {
 ```
 
 **Features:**
+
 - ESM and CJS exports
 - Full TypeScript support
 - No external UI dependencies
@@ -98,7 +99,7 @@ npx shadcn@latest add stablecoin-payment-modal
 #### Usage
 
 ```tsx
-import { StablecoinPaymentModal } from '@/components/stablecoin-payment-modal';
+import { StablecoinPaymentModal } from "@/components/stablecoin-payment-modal";
 
 export default function App() {
   // Same API as NPM version
@@ -106,6 +107,7 @@ export default function App() {
 ```
 
 **Features:**
+
 - Full source code customization
 - Works with existing shadcn/ui projects
 - Automatic dependency installation
@@ -163,6 +165,7 @@ pnpm build:npm
 ```
 
 Output: `packages/npm/dist/`
+
 - ESM: `index.mjs`
 - CJS: `index.cjs`
 - Types: `index.d.ts`
@@ -193,6 +196,7 @@ Registry structure: `packages/registry/registry/`
 ### Peer Dependencies
 
 Both packages require:
+
 - React 16.8+
 - React DOM 16.8+
 
@@ -226,6 +230,7 @@ Shared TypeScript configuration extended by all packages.
 ### .npmrc
 
 pnpm configuration:
+
 - `shamefully-hoist=true` - Hoist dependencies to node_modules root
 - `strict-peer-dependencies=false` - Allow peer dependency resolution
 
@@ -264,4 +269,4 @@ MIT
 
 ---
 
-Built with ❤️ using TypeScript, React, and Tailwind CSS, Viem
+Built with ❤️ using TypeScript, React, and Tailwind CSS, Viem, Wagmi
