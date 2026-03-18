@@ -39,7 +39,6 @@ RUN pnpm install
 
 EXPOSE 9990
 
-RUN ls -al /app/packages/server/dist/src/db/
 RUN ls -al /app/packages/server/dist/
 RUN apk add --no-cache bash
 
