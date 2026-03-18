@@ -32,6 +32,7 @@ interface BaseProps {
 interface RootCredenzaProps extends BaseProps {
   open?: boolean;
   disablePointerDismissal?: boolean;
+  dismissable?: boolean;
   onOpenChange?: (open: boolean) => void;
 }
 

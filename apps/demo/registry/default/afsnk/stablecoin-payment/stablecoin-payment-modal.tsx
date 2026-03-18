@@ -24,7 +24,15 @@ import {
   Wallet,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useQuery } from "@tanstack/react-query";
 import { betterFetch } from "@better-fetch/fetch";
@@ -51,10 +59,26 @@ import { useCountdown } from "@/hooks/use-countdown";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
+// ─── Stepper ─────────────────────────────────────────────────────────────────
+
 const { useStepper } = defineStepper(
   { id: "step-1", title: "Choose Asset" },
   { id: "step-2", title: "Send Deposit" },
 );
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const NETWORKS = [
+  { id: "base", name: "Base", symbol: "BASE" },
+  { id: "bsc", name: "Binance Smart Chain", symbol: "BSC" },
+] as const;
+
+const STABLECOINS = [
+  { id: "usdc", name: "USDC", symbol: "USDC" },
+  { id: "usdt", name: "Tether", symbol: "USDT" },
+] as const;
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface StablecoinPaymentModalProps {
   isOpen: boolean;
@@ -69,15 +93,82 @@ interface StablecoinPaymentModalProps {
   onConnect?: () => void | Promise<void>;
 }
 
-const NETWORKS = [
-  { id: "base", name: "Base", symbol: "BASE" },
-  { id: "bsc", name: "Binance Smart Chain", symbol: "BSC" },
-];
+// ─── Reducer ─────────────────────────────────────────────────────────────────
+// Consolidating the 5 scattered useState calls into a single useReducer.
+// Grouping logically related state transitions (e.g. changing the network/coin
+// also resets `copied` and `paymentMade`) prevents stale state bugs that arise
+// when each setState call lands in a separate micro-task.
 
-const STABLECOINS = [
-  { id: "usdc", name: "USDC", symbol: "USDC" },
-  { id: "usdt", name: "Tether", symbol: "USDT" },
-];
+type PaymentState = {
+  selectedNetwork: string;
+  selectedStablecoin: string;
+  paymentAddress: string;
+  copied: boolean;
+  paymentMade: boolean;
+};
+
+type PaymentAction =
+  | { type: "SET_NETWORK"; payload: string }
+  | { type: "SET_STABLECOIN"; payload: string }
+  | { type: "SET_ADDRESS"; payload: string }
+  | { type: "COPY_ADDRESS" }
+  | { type: "COPY_ADDRESS_CLEAR" }
+  | { type: "PAYMENT_MADE" }
+  | { type: "PAYMENT_MADE_CLEAR" }
+  | { type: "RESET_SELECTION" }; // keeps network/coin, wipes transient flags
+
+const initialState: PaymentState = {
+  selectedNetwork: "base",
+  selectedStablecoin: "usdc",
+  paymentAddress: "",
+  copied: false,
+  paymentMade: false,
+};
+
+function paymentReducer(
+  state: PaymentState,
+  action: PaymentAction,
+): PaymentState {
+  switch (action.type) {
+    // Changing asset resets copy & payment-made flags atomically
+    case "SET_NETWORK":
+      return {
+        ...state,
+        selectedNetwork: action.payload,
+        copied: false,
+        paymentMade: false,
+      };
+    case "SET_STABLECOIN":
+      return {
+        ...state,
+        selectedStablecoin: action.payload,
+        copied: false,
+        paymentMade: false,
+      };
+    case "SET_ADDRESS":
+      return { ...state, paymentAddress: action.payload };
+    case "COPY_ADDRESS":
+      return { ...state, copied: true };
+    case "COPY_ADDRESS_CLEAR":
+      return { ...state, copied: false };
+    case "PAYMENT_MADE":
+      return { ...state, paymentMade: true };
+    case "PAYMENT_MADE_CLEAR":
+      return { ...state, paymentMade: false };
+    // Full reset of transient flags (called after success/failure/timeout)
+    case "RESET_SELECTION":
+      return {
+        ...state,
+        copied: false,
+        paymentMade: false,
+        paymentAddress: "",
+      };
+    default:
+      return state;
+  }
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 
 export function StablePayModal({
   amount,
@@ -91,23 +182,46 @@ export function StablePayModal({
   reference,
   onConnect,
 }: StablecoinPaymentModalProps) {
-  const [selectedNetwork, setSelectedNetwork] = useState<string>("base");
-  const [selectedStablecoin, setSelectedStablecoin] = useState<string>("usdc");
-  const [paymentAddress, setPaymentAddress] = useState<string>("");
-  const [copied, setCopied] = useState(false);
-  const [isConnecting, setIsConnecting] = useState(false);
-  const [paymentMade, setPaymentMade] = useState(false);
+  const [state, dispatch] = useReducer(paymentReducer, initialState);
+  const {
+    selectedNetwork,
+    selectedStablecoin,
+    paymentAddress,
+    copied,
+    paymentMade,
+  } = state;
+
   const stepper = useStepper();
 
+  // ── Stabilise parent callbacks ──────────────────────────────────────────────
+  // If the parent component re-renders and passes a new function reference for
+  // `onPaymentFinished` / `onPaymentFailed`, a naïve useEffect dependency on
+  // those props would fire the effect (and therefore the callback) again on
+  // every parent render. We store the *latest* version in a ref and expose a
+  // stable wrapper so effect dependency arrays can safely include it.
+  const onPaymentFinishedRef = useRef(onPaymentFinished);
+  const onPaymentFailedRef = useRef(onPaymentFailed);
   useEffect(() => {
-    console.log("Reference", { reference });
-  }, [reference]);
+    onPaymentFinishedRef.current = onPaymentFinished;
+  }, [onPaymentFinished]);
   useEffect(() => {
-    if (paymentMade) {
-      setTimeout(() => setPaymentMade(false), 2000);
-    }
-  }, [paymentMade]);
+    onPaymentFailedRef.current = onPaymentFailed;
+  }, [onPaymentFailed]);
 
+  const stableOnPaymentFinished = useCallback((result: any) => {
+    onPaymentFinishedRef.current(result);
+  }, []); // empty deps – intentionally stable for the lifetime of the component
+
+  const stableOnPaymentFailed = useCallback((error: any) => {
+    onPaymentFailedRef.current(error);
+  }, []);
+
+  // ── Guard ref ───────────────────────────────────────────────────────────────
+  // Prevents onPaymentFinished / onPaymentFailed from being called more than
+  // once per payment attempt even if the query triggers multiple re-renders.
+  const callbackFiredRef = useRef(false);
+
+  // ── Payment init mutation ───────────────────────────────────────────────────
   const paymentInit = useMutation<{
     status: string;
     amount: number;
@@ -121,105 +235,115 @@ export function StablePayModal({
       reference,
     ],
     mutationFn: async (values: any) => {
-      try {
-        console.log("Values", { values });
-        const { data, error } = await betterFetch<{
-          address: string;
-          status: string;
-          amount: number;
-        }>(`${apiUrl}/payment/init`, {
-          body: values,
-        });
+      const { data, error } = await betterFetch<{
+        address: string;
+        status: string;
+        amount: number;
+      }>(`${apiUrl}/payment/init`, { body: values });
 
-        if (error) {
-          console.log("Error", { error });
-          throw error;
-        }
-        return data;
-      } catch (error: any) {
-        console.log("Failed to make request", { error });
-        throw error;
-      }
+      if (error) throw error;
+      return data;
     },
     onSuccess: (data) => {
-      console.log("Data injustice...", { data });
-      setPaymentAddress(data?.address);
+      dispatch({ type: "SET_ADDRESS", payload: data?.address });
       stepper.navigation.goTo("step-2");
     },
-    onError: (error) => {
-      console.log("Ressponse...", { error });
-    },
   });
+
+  // ── Payment confirm query ───────────────────────────────────────────────────
   const paymentConfirm = useQuery({
-    queryKey: ["payment", "coinfirm", reference],
+    queryKey: ["payment", "confirm", reference],
     queryFn: async () => {
-      try {
-        console.log(`⏳ Confirming payment request`);
-        const { data, error } = await betterFetch<any>(
-          `${apiUrl}/payment/confirm/${reference}`,
-        );
-        if (error) {
-          console.log("Error confirming transaction", { error });
-          throw error;
-        }
-        console.log("data", { data });
-        return data;
-      } catch (error: any) {
-        console.log("Failed to make request", { error });
-        throw error;
-      }
+      const { data, error } = await betterFetch<any>(
+        `${apiUrl}/payment/confirm/${reference}`,
+      );
+      if (error) throw error;
+      return data;
     },
     enabled: paymentMade,
+    // Do not re-fetch automatically – we only want this to run once per
+    // explicit user action (clicking "I have made payment").
+    retry: false,
+    refetchOnWindowFocus: false,
   });
 
+  // ── Handle confirm result ───────────────────────────────────────────────────
+  // BUG FIX: The original dependency array included the entire `paymentConfirm`
+  // object. Because React Query creates a new object reference on every render,
+  // this caused the effect – and therefore the callbacks – to fire on *every*
+  // parent re-render rather than only when data/error actually changed.
+  //
+  // Fix 1: Depend only on the stable primitive values (.data / .error).
+  // Fix 2: callbackFiredRef ensures we call the prop at most once per attempt.
+  // Fix 3: Reset the guard when a new payment attempt starts (paymentMade → true).
   useEffect(() => {
+    if (!paymentConfirm.data && !paymentConfirm.error) return;
+    if (callbackFiredRef.current) return; // ← guard against double-fire
+
+    callbackFiredRef.current = true;
+
     if (paymentConfirm.data) {
-      onPaymentFinished(paymentConfirm.data);
-      stepper.navigation.goTo("step-1");
-      paymentInit.reset();
+      stableOnPaymentFinished(paymentConfirm.data);
     } else if (paymentConfirm.error) {
-      console.log("Call payment confirm failed with error object");
-      onPaymentFailed(paymentConfirm.error);
-      stepper.navigation.goTo("step-1");
-      paymentInit.reset();
+      stableOnPaymentFailed(paymentConfirm.error);
     }
-  }, [paymentConfirm.data, paymentConfirm.error, paymentConfirm]);
-  // Generate address when network or stablecoin changes
+
+    // Reset UI back to step 1
+    stepper.navigation.goTo("step-1");
+    paymentInit.reset();
+    dispatch({ type: "RESET_SELECTION" });
+  }, [paymentConfirm.data, paymentConfirm.error]); // ← stable primitives only
+
+  // Reset the guard when user triggers a new payment attempt
   useEffect(() => {
-    setCopied(false);
-    setPaymentMade(false);
+    if (paymentMade) {
+      callbackFiredRef.current = false;
+    }
+  }, [paymentMade]);
+
+  // Reset mutation when asset/network changes
+  useEffect(() => {
     paymentInit.reset();
   }, [selectedNetwork, selectedStablecoin]);
-  const convertedAmount = amount ? amount / 1365 : 0;
 
-  const handleCopyAddress = () => {
-    if (paymentInit.data) {
-      navigator.clipboard.writeText(paymentInit.data.address);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
+  // ── Stable handlers ─────────────────────────────────────────────────────────
+  // Wrapped in useCallback so that memoised child components (ConfigSelect,
+  // Deposit) do not re-render when unrelated state in this component changes.
 
-  const handleConnectWallet = async () => {
-    setIsConnecting(true);
-    // Simulate wallet connection - in production, integrate with Web3.js or ethers.js
-    setTimeout(() => {
-      setIsConnecting(false);
-      // Handle wallet connection logic here
-      console.log("Wallet connection initiated");
-    }, 1500);
-  };
+  const handleCopyAddress = useCallback(() => {
+    const address = paymentInit.data?.address ?? paymentAddress;
+    if (!address) return;
+    navigator.clipboard.writeText(address);
+    dispatch({ type: "COPY_ADDRESS" });
+    setTimeout(() => dispatch({ type: "COPY_ADDRESS_CLEAR" }), 2000);
+  }, [paymentInit.data?.address, paymentAddress]);
 
-  const networkName =
-    NETWORKS.find((n) => n.id === selectedNetwork)?.name || "Base";
-  const stablecoinSymbol =
-    STABLECOINS.find((s) => s.id === selectedStablecoin)?.symbol || "USDC";
+  const handlePaymentMade = useCallback(() => {
+    dispatch({ type: "PAYMENT_MADE" });
+  }, []);
+
+  const handleTimerEnd = useCallback(() => {
+    paymentInit.reset();
+    dispatch({ type: "RESET_SELECTION" });
+    stepper.navigation.goTo("step-1");
+  }, [paymentInit, stepper.navigation]);
+
+  const handleNetworkSelect = useCallback((value: string) => {
+    dispatch({ type: "SET_NETWORK", payload: value });
+  }, []);
+
+  const handleAssetSelect = useCallback((value: string) => {
+    dispatch({ type: "SET_STABLECOIN", payload: value });
+  }, []);
+
+  const convertedAmount = useMemo(() => (amount ? amount / 1365 : 0), [amount]);
 
   return (
     <Credenza
       open={isOpen}
       onOpenChange={onOpenChange}
       disablePointerDismissal={true}
+      dismissable={false}
     >
       <CredenzaContent className="sm:max-w-md max-w-lg w-full border-0 shadow-2xl p-0">
         <ScrollArea className="h-[400px] p-2 sm:p-4">
@@ -232,6 +356,7 @@ export function StablePayModal({
               complete this payment.
             </CredenzaDescription>
           </CredenzaHeader>
+
           <NavHeader />
 
           {stepper.flow.switch({
@@ -241,9 +366,9 @@ export function StablePayModal({
                 convertedAmount={convertedAmount}
                 currency={currency}
                 selectedNetwork={selectedNetwork}
-                onNetworkSelect={setSelectedNetwork}
+                onNetworkSelect={handleNetworkSelect}
                 selectedAsset={selectedStablecoin}
-                onAssetSelected={setSelectedStablecoin}
+                onAssetSelected={handleAssetSelect}
                 paymentInit={paymentInit}
                 reference={reference}
                 callbackUrl={callbackUrl}
@@ -261,11 +386,8 @@ export function StablePayModal({
                 paymentAddress={paymentAddress}
                 paymentInit={paymentInit}
                 paymentConfirm={paymentConfirm}
-                onPaymentMade={setPaymentMade}
-                onTimerEnd={() => {
-                  paymentInit?.reset();
-                  stepper.navigation.goTo("step-1");
-                }}
+                onPaymentMade={handlePaymentMade}
+                onTimerEnd={handleTimerEnd}
               />
             ),
           })}
@@ -275,34 +397,30 @@ export function StablePayModal({
   );
 }
 
-function NavHeader() {
+// ─── NavHeader ────────────────────────────────────────────────────────────────
+// Memoised: only depends on stepper state, never on payment state.
+
+const NavHeader = memo(function NavHeader() {
   const stepper = useStepper();
   const isStep1 = stepper.flow.is("step-1");
   const isStep2 = stepper.flow.is("step-2");
+
   return (
     <div className="flex w-full items-center">
       <div className="grid place-items-center">
-        <Wallet
-          className={cn("w-5 h-5", {
-            "text-primary": isStep1,
-          })}
-        />
+        <Wallet className={cn("w-5 h-5", { "text-primary": isStep1 })} />
         <span className={cn({ "text-primary": isStep1 })}>Choose asset</span>
       </div>
       <div className="h-0.5 rounded-2xl w-[150px] mx-auto dark:bg-white bg-primary" />
       <div className="grid place-items-center">
-        <Send
-          className={cn("w-5 h-5", {
-            "text-primary": isStep2,
-          })}
-        />
+        <Send className={cn("w-5 h-5", { "text-primary": isStep2 })} />
         <span className={cn({ "text-primary": isStep2 })}>Send deposit</span>
       </div>
     </div>
   );
-}
+});
 
-// ─── Formatting Utilities ────────────────────────────────────────────────────
+// ─── Formatting Utilities ─────────────────────────────────────────────────────
 
 const pad = (n: number) => String(n).padStart(2, "0");
 
@@ -313,10 +431,11 @@ const formatTime = (totalSeconds: number) => {
   return `${pad(h)}:${pad(m)}:${pad(s)}`;
 };
 
-const parseToSeconds = (h: number, m: number, s: number) =>
-  Number(h) * 3600 + Number(m) * 60 + Number(s);
+// ─── Deposit ──────────────────────────────────────────────────────────────────
+// Memoised: only re-renders when its own props change, not on every parent
+// dispatch that touches unrelated slices (e.g. selectedNetwork on step-1).
 
-function Deposit({
+const Deposit = memo(function Deposit({
   amount,
   convertedAmount,
   currency,
@@ -330,24 +449,28 @@ function Deposit({
   onCopyAddress,
   onTimerEnd,
 }: any) {
-  const stepper = useStepper();
-  const [intervalValue, setIntervalValue] = useState<number>(1000);
-  const [count, { startCountdown, stopCountdown, resetCountdown }] =
-    useCountdown({
-      countStart: 300,
-      intervalMs: intervalValue,
-    });
+  const [count, { startCountdown }] = useCountdown({
+    countStart: 300,
+    intervalMs: 1000,
+  });
 
+  // Start the countdown exactly once when the Deposit mounts.
+  // Previously the countdown was started inside an effect with no deps guard,
+  // and `onTimerEnd` was an inline arrow function – both caused subtle
+  // restarts on re-renders.
   useEffect(() => {
-    console.log("Starting countdown");
     startCountdown();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // intentionally empty – run once on mount
+
+  // NOTE: If useCountdown does not accept an `onEnd` callback, keep the
+  // original count-watching pattern but pass a stable `onTimerEnd` (which
+  // the parent now provides via useCallback).
   useEffect(() => {
-    if (count <= 0) {
-      window.alert("Timer ran out! Please try again.");
-      onTimerEnd();
-    }
+    if (count <= 0) onTimerEnd();
   }, [count]);
+
+  const resolvedAddress = paymentInit?.data?.address ?? paymentAddress;
 
   return (
     <div className="space-y-6 py-4">
@@ -359,141 +482,119 @@ function Deposit({
         <ItemActions>
           <Badge>
             <Clock className="size-4" />
-            <span>{formatTime(count)}</span>
+            {/* Render count from useCountdown here */}
+            {formatTime(count)}
           </Badge>
         </ItemActions>
       </Item>
-      {
-        <>
-          <Card>
-            <CardContent className="grid items-center place-items-center gap-2 justify-center">
-              <div className="flex space-x-0.5 items-center justify-center w-full">
-                <span className="text-sm font-normal">Pay exactly</span>
-                <h1 className="text-3xl font-semibold">
-                  {convertedAmount.toFixed(2)} {stablecoinSymbol.toUpperCase()}
-                </h1>
-                <Button variant="outline" size="icon-sm">
-                  <Copy className="size-4" />
-                </Button>
-              </div>
-              <span className="text-xs font-normal text-center text-muted-foreground">
-                ~{amount} {currency}
-              </span>
-              <Badge>
-                Network: {stablecoinSymbol.toUpperCase()}-
-                {networkName.toUpperCase()}
-              </Badge>
-            </CardContent>
-          </Card>
-          <Alert variant="default">
-            <InfoIcon />
-            <AlertTitle>Warning</AlertTitle>
-            <AlertDescription>
-              Send only the exact amount shown on the correct network to ensure
-              automatic detection of funds and avoid loss.
-            </AlertDescription>
-          </Alert>
-          {/* Payment Address Section */}
-          <div className="space-y-3 pt-2">
-            <Item variant="muted" className="bg-muted">
-              <ItemContent>
-                <ItemTitle className="text-primary">Payment address</ItemTitle>
-                <HoverCard>
-                  <HoverCardTrigger
-                    delay={10}
-                    closeDelay={100}
-                    render={
-                      <ItemDescription className="text-primary">
-                        {paymentInit?.data?.addresss ?? paymentAddress}
-                      </ItemDescription>
-                    }
-                  />
-                  <HoverCardContent className="flex w-64 flex-col gap-0.5">
-                    <QRCode
-                      size={256}
-                      style={{
-                        height: "auto",
-                        maxWidth: "100%",
-                        width: "100%",
-                      }}
-                      viewBox={`0 0 256 256`}
-                      value={paymentInit?.data?.address ?? paymentAddress}
-                    />
-                  </HoverCardContent>
-                </HoverCard>
-              </ItemContent>
-              <ItemActions>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onCopyAddress}
-                  className="ml-2 flex-shrink-0 p-2 rounded-md hover:bg-muted transition-colors"
-                  aria-label="Copy address"
-                >
-                  {copied ? (
-                    <Check className="w-5 h-5 text-accent" />
-                  ) : (
-                    <Copy className="w-5 h-5 text-accent hover:text-foreground transition-colors" />
-                  )}
-                </Button>
-              </ItemActions>
-            </Item>
-          </div>
-        </>
-      }
-      {
-        <>
-          {/* Connect Wallet Button */}
-          {/*<Button
-            onClick={handleConnectWallet}
-            disabled={isConnecting}
-            className="w-full h-11 bg-accent hover:bg-accent/90 text-accent-foreground font-semibold rounded-lg transition-all active:scale-95"
-          >
-            {isConnecting ? (
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded-full border-2 border-accent-foreground border-t-transparent animate-spin" />
-                <span>Connecting Wallet...</span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <Wallet className="w-5 h-5" />
-                <span>Connect Wallet</span>
-              </div>
-            )}
-          </Button>*/}
-          <Button
-            onClick={() => onPaymentMade((_prev: boolean) => !_prev)}
-            disabled={paymentConfirm.isLoading}
-            className="w-full h-11 bg-accent hover:bg-accent/90 text-accent-foreground font-semibold rounded-lg transition-all active:scale-95"
-          >
-            <div className="flex items-center gap-2">
-              {paymentConfirm.isLoading ? (
-                <Spinner className="w-5 h-5" />
-              ) : (
-                <CheckCircle className="w-5 h-5" />
-              )}
-              <span>
-                {paymentConfirm.isLoading
-                  ? "Confirming Payment..."
-                  : "I have made payment"}
-              </span>
-            </div>
-          </Button>
 
-          {/* Alternative Payment Text */}
-          <p className="text-xs text-center text-muted-foreground pt-2">
-            Don't have a wallet?{" "}
-            <button className="text-accent hover:underline font-medium">
-              Learn more
-            </button>
-          </p>
-        </>
-      }
+      <Card>
+        <CardContent className="grid items-center place-items-center gap-2 justify-center">
+          <div className="flex space-x-0.5 items-center justify-center w-full">
+            <span className="text-sm font-normal">Pay exactly</span>
+            <h1 className="text-3xl font-semibold">
+              {convertedAmount.toFixed(2)} {stablecoinSymbol.toUpperCase()}
+            </h1>
+            <Button variant="outline" size="icon-sm">
+              <Copy className="size-4" />
+            </Button>
+          </div>
+          <span className="text-xs font-normal text-center text-muted-foreground">
+            ~{amount} {currency}
+          </span>
+          <Badge>
+            Network: {stablecoinSymbol.toUpperCase()}-
+            {networkName.toUpperCase()}
+          </Badge>
+        </CardContent>
+      </Card>
+
+      <Alert variant="default">
+        <InfoIcon />
+        <AlertTitle>Warning</AlertTitle>
+        <AlertDescription>
+          Send only the exact amount shown on the correct network to ensure
+          automatic detection of funds and avoid loss.
+        </AlertDescription>
+      </Alert>
+
+      <div className="space-y-3 pt-2">
+        <Item variant="muted" className="bg-muted">
+          <ItemContent>
+            <ItemTitle className="text-primary">Payment address</ItemTitle>
+            <HoverCard>
+              <HoverCardTrigger
+                delay={10}
+                closeDelay={100}
+                render={
+                  <ItemDescription className="text-primary">
+                    {resolvedAddress}
+                  </ItemDescription>
+                }
+              />
+              <HoverCardContent className="flex w-64 flex-col gap-0.5">
+                <QRCode
+                  size={256}
+                  style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                  viewBox="0 0 256 256"
+                  value={resolvedAddress}
+                />
+              </HoverCardContent>
+            </HoverCard>
+          </ItemContent>
+          <ItemActions>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onCopyAddress}
+              className="ml-2 flex-shrink-0 p-2 rounded-md hover:bg-muted transition-colors"
+              aria-label="Copy address"
+            >
+              {copied ? (
+                <Check className="w-5 h-5 text-accent" />
+              ) : (
+                <Copy className="w-5 h-5 text-accent hover:text-foreground transition-colors" />
+              )}
+            </Button>
+          </ItemActions>
+        </Item>
+      </div>
+
+      <Button
+        // FIX: was `(_prev) => !_prev` which is a toggle – incorrect, since
+        // clicking twice would disable the query. It should always set to true.
+        onClick={onPaymentMade}
+        disabled={paymentConfirm.isLoading || paymentConfirm.isFetching}
+        className="w-full h-11 bg-accent hover:bg-accent/90 text-accent-foreground font-semibold rounded-lg transition-all active:scale-95"
+      >
+        <div className="flex items-center gap-2">
+          {paymentConfirm.isLoading || paymentConfirm.isFetching ? (
+            <Spinner className="w-5 h-5" />
+          ) : (
+            <CheckCircle className="w-5 h-5" />
+          )}
+          <span>
+            {paymentConfirm.isLoading || paymentConfirm.isFetching
+              ? "Confirming Payment..."
+              : "I have made payment"}
+          </span>
+        </div>
+      </Button>
+
+      <p className="text-xs text-center text-muted-foreground pt-2">
+        Don't have a wallet?{" "}
+        <button className="text-accent hover:underline font-medium">
+          Learn more
+        </button>
+      </p>
     </div>
   );
-}
+});
 
-function ConfigSelect({
+// ─── ConfigSelect ─────────────────────────────────────────────────────────────
+// Memoised: only depends on asset/network selection, not on deposit state.
+
+const ConfigSelect = memo(function ConfigSelect({
   selectedNetwork,
   onNetworkSelect,
   selectedAsset,
@@ -505,6 +606,23 @@ function ConfigSelect({
   reference,
   callbackUrl,
 }: any) {
+  const handleProceed = useCallback(() => {
+    paymentInit.mutate({
+      reference,
+      amount,
+      callbackUrl,
+      network: selectedNetwork,
+      asset: selectedAsset,
+    });
+  }, [
+    paymentInit,
+    reference,
+    amount,
+    callbackUrl,
+    selectedNetwork,
+    selectedAsset,
+  ]);
+
   return (
     <div className="grid grid-cols-1 gap-4 w-full">
       <Card>
@@ -518,7 +636,7 @@ function ConfigSelect({
           </span>
         </CardContent>
       </Card>
-      {/* Stablecoin Selection */}
+
       <div className="flex-col space-y-2.5 w-full h-24">
         <Label className="text-sm font-medium text-foreground">
           Select stablecoin
@@ -532,10 +650,8 @@ function ConfigSelect({
               <SelectItem key={coin.id} value={coin.id}>
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-accent" />
-                  <span>{coin.name}</span>
-                  <span className="text-muted-foreground text-sm">
-                    ({coin.symbol})
-                  </span>
+                  <span className="text-primary">{coin.name}</span>
+                  <span className="text-primary">({coin.symbol})</span>
                 </div>
               </SelectItem>
             ))}
@@ -543,7 +659,6 @@ function ConfigSelect({
         </Select>
       </div>
 
-      {/* Network Selection */}
       <div className="flex-col gap-1 w-full h-24">
         <Label className="text-sm font-medium text-foreground">
           Select network
@@ -568,18 +683,17 @@ function ConfigSelect({
       <Button
         disabled={paymentInit.isPending}
         className="ml-2 flex-shrink-0 p-2 rounded-md hover:bg-muted transition-colors"
-        onClick={() => {
-          paymentInit.mutate({
-            reference: reference,
-            amount: amount,
-            callbackUrl: callbackUrl,
-            network: selectedNetwork,
-            asset: selectedAsset,
-          } as any);
-        }}
+        onClick={handleProceed}
       >
-        Get payment address
+        {paymentInit.isPending ? (
+          <div className="flex items-center gap-2">
+            <Spinner className="w-4 h-4" />
+            <span>Getting address…</span>
+          </div>
+        ) : (
+          "Get payment address"
+        )}
       </Button>
     </div>
   );
-}
+});

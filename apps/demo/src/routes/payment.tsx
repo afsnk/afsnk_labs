@@ -61,7 +61,7 @@ function RouteComponent() {
             setIsOpen(false);
           }}
           currency="NGN"
-          amount={40000}
+          amount={82}
         />
       </section>
     </main>
