@@ -1,4 +1,3 @@
-import * as React from "react";
 import {
   DndContext,
   KeyboardSensor,
@@ -60,15 +59,6 @@ import {
   DrawerTrigger,
 } from "@/components/ui/drawer";
 
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import {
   Table,
@@ -83,6 +73,10 @@ import { Badge } from "./ui/badge";
 import { Copy } from "lucide-react";
 import type { Transaction } from "@afsnk/pay-server/types";
 import { List, ListItem } from "./ui/list";
+import { useQuery } from "@tanstack/react-query";
+import { betterFetch } from "@better-fetch/fetch";
+import { toast } from "sonner";
+import { useEffect, useId, useMemo, useState } from "react";
 
 type RowSchema = z.ZodTypeAny;
 
@@ -145,16 +139,16 @@ export function DataTable<T extends GenTableType>({
   columns: Array<ColumnDef<T>>;
   table: TableType<T>;
 }) {
-  const [data, setData] = React.useState(() => initialData);
+  const [data, setData] = useState(() => initialData);
 
-  const sortableId = React.useId();
+  const sortableId = useId();
   const sensors = useSensors(
     useSensor(MouseSensor, {}),
     useSensor(TouchSensor, {}),
     useSensor(KeyboardSensor, {}),
   );
 
-  const dataIds = React.useMemo<Array<UniqueIdentifier>>(
+  const dataIds = useMemo<Array<UniqueIdentifier>>(
     () => data.map(({ id }) => id),
     [data],
   );
@@ -170,7 +164,7 @@ export function DataTable<T extends GenTableType>({
     }
   }
 
-  React.useEffect(() => {
+  useEffect(() => {
     console.log("Re-render table on pagination", table.getState());
   });
 
@@ -244,8 +238,37 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
+const apiUrl = import.meta.env.DEV
+  ? "http://localhost:9999"
+  : "https://afsnk-pay-server.fly.dev";
 export function TransactionTableCellViewer({ item }: { item: Transaction }) {
   const isMobile = useIsMobile();
+  const paymentConfirm = useQuery({
+    queryKey: ["payment", "confirm", item.reference],
+    queryFn: async () => {
+      const { data, error } = await betterFetch<any>(
+        `${apiUrl}/payment/confirm/${item.reference}`,
+      );
+      if (error) throw error;
+      return data;
+    },
+    enabled: false,
+    // Do not re-fetch automatically – we only want this to run once per
+    // explicit user action (clicking "I have made payment").
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+  useEffect(() => {
+    if (paymentConfirm.error) {
+      toast.error("Failed to confirm payment", {
+        description: paymentConfirm.error.message,
+      });
+    }
+
+    if (paymentConfirm.data) {
+      toast.success("Payment confirmed, webhook resent");
+    }
+  }, [paymentConfirm.data, paymentConfirm.error]);
 
   return (
     <Drawer direction={isMobile ? "bottom" : "right"}>
@@ -315,8 +338,9 @@ export function TransactionTableCellViewer({ item }: { item: Transaction }) {
         <DrawerFooter>
           <Button
             onClick={async () => {
-              alert("Will resend transaction webhook request");
+              paymentConfirm.refetch();
             }}
+            disabled={paymentConfirm.isLoading}
           >
             Resend webhook
           </Button>
