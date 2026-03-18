@@ -246,7 +246,7 @@ function RouteComponent() {
   });
 
   const table = useReactTable({
-    data: data as any,
+    data: data,
     columns,
     state: {
       sorting,

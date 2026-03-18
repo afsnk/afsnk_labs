@@ -527,12 +527,16 @@ const Deposit = memo(function Deposit({
                 asChild
                 render={() => (
                   <ItemDescription className="text-primary">
-                    {resolvedAddress}
+                    {resolvedAddress.slice(0, 8)}
+                    {"..."}
+                    {resolvedAddress.slice(-8)}
                   </ItemDescription>
                 )}
               >
                 <ItemDescription className="text-primary">
-                  {resolvedAddress}
+                  {resolvedAddress.slice(0, 8)}
+                  {"..."}
+                  {resolvedAddress.slice(-8)}
                 </ItemDescription>
               </HoverCardTrigger>
               <HoverCardContent className="flex w-64 flex-col gap-0.5">
