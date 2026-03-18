@@ -58,6 +58,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { useCountdown } from "@/hooks/use-countdown";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import type { InsertTransaction, Transaction } from "@afsnk/pay-server/types";
 
 // ─── Stepper ─────────────────────────────────────────────────────────────────
 
@@ -90,6 +91,7 @@ interface StablecoinPaymentModalProps {
   apiUrl: string;
   callbackUrl: string;
   reference?: string | null;
+  metadata?: Record<string, any>;
   onConnect?: () => void | Promise<void>;
 }
 
@@ -180,6 +182,7 @@ export function StablePayModal({
   apiUrl,
   callbackUrl,
   reference,
+  metadata,
   onConnect,
 }: StablecoinPaymentModalProps) {
   const [state, dispatch] = useReducer(paymentReducer, initialState);
@@ -234,7 +237,7 @@ export function StablePayModal({
       selectedStablecoin,
       reference,
     ],
-    mutationFn: async (values: any) => {
+    mutationFn: async (values: InsertTransaction) => {
       const { data, error } = await betterFetch<{
         address: string;
         status: string;
@@ -372,6 +375,7 @@ export function StablePayModal({
                 paymentInit={paymentInit}
                 reference={reference}
                 callbackUrl={callbackUrl}
+                metadata={metadata}
               />
             ),
             "step-2": () => (
@@ -605,6 +609,7 @@ const ConfigSelect = memo(function ConfigSelect({
   paymentInit,
   reference,
   callbackUrl,
+  metadata,
 }: any) {
   const handleProceed = useCallback(() => {
     paymentInit.mutate({
@@ -613,6 +618,11 @@ const ConfigSelect = memo(function ConfigSelect({
       callbackUrl,
       network: selectedNetwork,
       asset: selectedAsset,
+      ...(metadata && {
+        merchantMetadata: {
+          ...metadata,
+        },
+      }),
     });
   }, [
     paymentInit,

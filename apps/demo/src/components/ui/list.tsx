@@ -43,7 +43,9 @@ export function ListItem({
       )}
 
       <div className="flex-1 min-w-0">
-        <h3 className="font-medium text-foreground text-balance">{title}</h3>
+        <h3 className="font-medium text-foreground text-balance capitalize">
+          {title}
+        </h3>
         {description &&
           (typeof description === "string" ? (
             <p className="text-sm text-muted-foreground mt-1 text-pretty">

@@ -292,6 +292,24 @@ export function TransactionTableCellViewer({ item }: { item: Transaction }) {
                 dateStyle: "medium",
               }).format(new Date(item.createdAt))}
             />
+
+            <h1 className="text-lg font-semibold my-3">Customer data</h1>
+            {item.merchantMetadata ? (
+              <>
+                {"customer" in item.merchantMetadata &&
+                  Object.entries(item.merchantMetadata?.customer).map(
+                    ([key, value]) => (
+                      <ListItem
+                        key={key}
+                        title={key}
+                        description={value as string}
+                      />
+                    ),
+                  )}
+              </>
+            ) : (
+              "N/A"
+            )}
           </List>
         </div>
         <DrawerFooter>

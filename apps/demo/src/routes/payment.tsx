@@ -62,6 +62,13 @@ function RouteComponent() {
           }}
           currency="NGN"
           amount={82}
+          metadata={{
+            customer: {
+              name: "John Doe",
+              email: "john@example.com",
+              phone: "+23400000001",
+            },
+          }}
         />
       </section>
     </main>
