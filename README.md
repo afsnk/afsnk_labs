@@ -264,4 +264,4 @@ MIT
 
 ---
 
-Built with ❤️ using TypeScript, React, and Tailwind CSS
+Built with ❤️ using TypeScript, React, and Tailwind CSS, Viem
