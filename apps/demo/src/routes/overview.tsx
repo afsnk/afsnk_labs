@@ -86,7 +86,7 @@ export const TransactionTableContext = createContext<{
   table: TableType<Transaction>;
 }>({ table: {} as any });
 
-const defaultColumns: Array<ColumnDef<Transaction>> = [
+const defaultColumns: Array<ColumnDef<Transaction & {hasBalance?: boolean}>> = [
   // {
   //   id: 'drag',
   //   header: () => null,
@@ -140,6 +140,20 @@ const defaultColumns: Array<ColumnDef<Transaction>> = [
           <IconCircleX className="fill-red-500 dark:fill-red-400" />
         )}
         {row.original.status}
+      </Badge>
+    ),
+  },
+  {
+    accessorKey: "hasBalance",
+    header: "Amount Paid",
+    cell: ({ row }) => (
+      <Badge variant="outline" className="text-muted-foreground px-1.5">
+        {row.original.hasBalance? (
+          <IconCircleCheckFilled className="fill-green-500 dark:fill-green-400" />
+        ) : (
+          <IconCircleX className="fill-red-500 dark:fill-red-400" />
+        )}
+        {row.original.hasBalance? "Paid" : "Not Paid"}
       </Badge>
     ),
   },
@@ -216,7 +230,7 @@ const defaultColumns: Array<ColumnDef<Transaction>> = [
 export const Route = createFileRoute("/overview")({
   component: RouteComponent,
   loader: async () => {
-    const { data, error } = await betterFetch<Transaction[]>(
+    const { data, error } = await betterFetch<(Transaction & {hasBalance: boolean})[]>(
       `${
         import.meta.env.DEV
           ? "http://localhost:9999"
