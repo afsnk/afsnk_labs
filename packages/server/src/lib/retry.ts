@@ -31,3 +31,45 @@ export async function runWithRetry<T>(
   }
   throw new Error("Failed after retries");
 }
+// ===================================================================
+
+/**
+ * Runs an array of promise-returning functions consecutively,
+ * waiting a set interval between each, and returns all results
+ * in order — just like `.map()`.
+ *
+ * @param tasks    - Array of functions that return a Promise<T>
+ * @param interval - Milliseconds to wait between each task
+ * @returns        - Promise resolving to an array of results in order
+ */
+export async function sequentialMap<T>(
+  tasks: Array<() => Promise<T>>,
+  interval: number
+): Promise<T[]> {
+  const results: T[] = [];
+
+  for (let i = 0; i < tasks.length; i++) {
+    const result = await tasks[i]();
+    results.push(result);
+
+    const isLast = i === tasks.length - 1;
+    if (!isLast) {
+      await new Promise<void>((resolve) => setTimeout(resolve, interval));
+    }
+  }
+
+  return results;
+}
+
+
+// // --- Example usage ---
+// const fetchUser = (id: number) => () =>
+//   new Promise<{ id: number; name: string }>((resolve) =>
+//     setTimeout(() => resolve({ id, name: `User ${id}` }), 100)
+//   );
+
+// sequentialMap(
+//   [fetchUser(1), fetchUser(2), fetchUser(3)],
+//   500 // 500ms between each call
+// ).then(console.log);
+// [{ id: 1, name: 'User 1' }, { id: 2, name: 'User 2' }, { id: 3, name: 'User 3' }]

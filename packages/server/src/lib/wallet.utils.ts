@@ -337,20 +337,20 @@ export async function refactoredGetLogs(
   return { hasTransferEvent: true, decodedLog: undefined };
 }
 
-
 export async function getBalance(network: "base" | "bsc", address: Address, asset: "usdt" | "usdc" | "cngn") {
-  const chain = getChain(network)
+  const chain = getChain(network);
   const publicClient = createPublicClient({
     transport: http(),
     chain,
   });
-  const token = TOKEN_ADDRESSES[chain.id][asset]
+  const token = TOKEN_ADDRESSES[chain.id][asset];
+  console.log("Token", { token });
   const balance = await publicClient.readContract({
     address: token.address as Address,
     abi: parseAbi(["function balanceOf(address) view returns (uint256)"]),
     functionName: "balanceOf",
     args: [address],
   });
-  
-  return formatUnits(balance, token.decimal)
+
+  return Number(formatUnits(balance, token.decimal));
 }
