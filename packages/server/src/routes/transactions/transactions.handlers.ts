@@ -260,7 +260,7 @@ export const get: AppRouteHandler<GetTransactionRoute> = async (c) => {
     // const modifiedTransactions: ExtendedTransaction[] = await sequentialMap<ExtendedTransaction>(tasks, 2000);
     // console.log("Modified transaction", modifiedTransactions);
 
-    return c.json(transactions, HttpStatusCodes.OK);
+    return c.json(transactions.map(t => ({ ...t, vAddress: t.metadata.address })), HttpStatusCodes.OK);
   }
   catch (error: any) {
     console.log(`Failed to get transaction`, { error });

@@ -70,7 +70,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import type { Transaction } from "@afsnk/pay-server/types";
+import type { ExtendedTransaction, Transaction } from "@afsnk/pay-server/types";
 
 import { flexRender } from "@tanstack/react-table";
 import { Container, Main, Section } from "@/components/craft";
@@ -86,7 +86,7 @@ export const TransactionTableContext = createContext<{
   table: TableType<Transaction>;
 }>({ table: {} as any });
 
-const defaultColumns: Array<ColumnDef<Transaction & {hasBalance?: boolean, balance: number | string}>> = [
+const defaultColumns: Array<ColumnDef<ExtendedTransaction>> = [
   // {
   //   id: 'drag',
   //   header: () => null,
@@ -143,29 +143,25 @@ const defaultColumns: Array<ColumnDef<Transaction & {hasBalance?: boolean, balan
       </Badge>
     ),
   },
-  {
-    accessorKey: "hasBalance",
-    header: "Has balance",
-    cell: ({ row }) => (
-      <Badge variant="outline" className="text-muted-foreground px-1.5">
-        {row.original.hasBalance? (
-          <IconCircleCheckFilled className="fill-green-500 dark:fill-green-400" />
-        ) : (
-          <IconCircleX className="fill-red-500 dark:fill-red-400" />
-        )}
-        {row.original.hasBalance? "Paid" : "Not Paid"}
-      </Badge>
-    ),
-  },
-  {
-    accessorKey: "balance",
-    header: "Balance",
-    cell: ({ row }) => (
-      <span className="px-1.5">
-        {row.original.balance}
-      </span>
-    ),
-  },
+  // {
+  //   accessorKey: "hasBalance",
+  //   header: "Has balance",
+  //   cell: ({ row }) => (
+  //     <Badge variant="outline" className="text-muted-foreground px-1.5">
+  //       {row.original.hasBalance ? (
+  //         <IconCircleCheckFilled className="fill-green-500 dark:fill-green-400" />
+  //       ) : (
+  //         <IconCircleX className="fill-red-500 dark:fill-red-400" />
+  //       )}
+  //       {row.original.hasBalance ? "Paid" : "Not Paid"}
+  //     </Badge>
+  //   ),
+  // },
+  // {
+  //   accessorKey: "balance",
+  //   header: "Balance",
+  //   cell: ({ row }) => <span className="px-1.5">{row.original.balance}</span>,
+  // },
   {
     accessorKey: "network",
     header: () => "Network",
@@ -238,8 +234,16 @@ const defaultColumns: Array<ColumnDef<Transaction & {hasBalance?: boolean, balan
 
 export const Route = createFileRoute("/overview")({
   component: RouteComponent,
+  errorComponent: ({ error }) => (
+    <div>
+      <pre>{error.message}</pre>
+      <pre>{error.stack}</pre>
+    </div>
+  ),
   loader: async () => {
-    const { data, error } = await betterFetch<(Transaction & {hasBalance: boolean})[]>(
+    const { data, error } = await betterFetch<
+      (Transaction & { hasBalance: boolean; balance: string | number })[]
+    >(
       `${
         import.meta.env.DEV
           ? "http://localhost:9999"
