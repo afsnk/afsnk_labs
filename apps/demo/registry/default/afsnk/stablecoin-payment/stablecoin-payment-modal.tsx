@@ -59,6 +59,7 @@ import { useCountdown } from "@/hooks/use-countdown";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { InsertTransaction, Transaction } from "@afsnk/pay-server/types";
+import { Value } from "node_modules/@base-ui/react/esm/progress/index.parts";
 
 // ─── Stepper ─────────────────────────────────────────────────────────────────
 
@@ -352,7 +353,7 @@ export function StablePayModal({
       dismissable={false}
     >
       <CredenzaContent className="sm:max-w-md max-w-lg w-full border-0 shadow-2xl p-0">
-        <ScrollArea className="h-[400px] p-2 sm:p-4">
+        <ScrollArea className="min-h-[500px] h-[500px] p-2 sm:p-4">
           <CredenzaHeader className="space-y-1">
             <CredenzaTitle className="text-2xl font-semibold">
               Complete payment
@@ -523,6 +524,16 @@ const Deposit = memo(function Deposit({
           automatic detection of funds and avoid loss.
         </AlertDescription>
       </Alert>
+      <div className="space-y-3 pt-2 flex flex-col place-items-center">
+        <div className="flex flex-col w-64 border border-border p-3 rounded-sm">
+          <QRCode
+            size={256}
+            style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+            viewBox="0 0 256 256"
+            value={resolvedAddress}
+          />
+        </div>
+      </div>
 
       <div className="space-y-3 pt-2">
         <Item variant="muted" className="bg-muted">
@@ -650,19 +661,35 @@ const ConfigSelect = memo(function ConfigSelect({
         </CardContent>
       </Card>
 
-      <div className="flex-col space-y-2.5 w-full h-24">
+      <div className="flex-col space-y-2.5 w-full">
         <Label className="text-sm font-medium text-foreground">
           Select stablecoin
         </Label>
         <Select value={selectedAsset} onValueChange={onAssetSelected}>
-          <SelectTrigger className="h-24 w-full border border-border bg-background hover:border-accent transition-colors">
-            <SelectValue className="text-primary" />
+          <SelectTrigger className="h-[2.8rem] w-full border border-border bg-background hover:border-accent transition-colors">
+            <div className="flex items-center gap-2 h-full">
+              <img
+                src={`/images/${selectedAsset.toUpperCase() === "USDC" ? "usdc.png" : "usdt.svg"}`}
+                className="size-4 rounded-full bg-accent"
+              />
+              <span>{selectedAsset.toUpperCase()}</span>
+            </div>
+            {/*<SelectValue className="text-primary flex items-center h-full">
+              {(value) => {
+                console.log("Peek into value and field of select", value);
+                return (
+                );
+              }}
+            </SelectValue>*/}
           </SelectTrigger>
           <SelectContent>
             {STABLECOINS.map((coin) => (
               <SelectItem key={coin.id} value={coin.id}>
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-accent" />
+                  <img
+                    src={`/images/${coin.symbol === "USDC" ? "usdc.png" : "usdt.svg"}`}
+                    className="size-6 rounded-full bg-accent"
+                  />
                   <span className="text-primary">{coin.name}</span>
                   <span className="text-primary">({coin.symbol})</span>
                 </div>
@@ -678,13 +705,30 @@ const ConfigSelect = memo(function ConfigSelect({
         </Label>
         <Select value={selectedNetwork} onValueChange={onNetworkSelect}>
           <SelectTrigger className="h-20 w-full border border-border bg-background hover:border-accent transition-colors">
-            <SelectValue className="text-primary" />
+            <SelectValue className="text-primary flex items-center">
+              {(value) => {
+                return (
+                  <div className="flex items-center gap-2">
+                    <img
+                      src={`/images/${value === "base" ? "base.jpeg" : "binance.jpeg"}`}
+                      className="size-4 rounded-full bg-accent"
+                    />
+                    <span className="text-primary">
+                      {value === "base" ? "Base" : "Binance Smart Chain"}
+                    </span>
+                  </div>
+                );
+              }}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             {NETWORKS.map((network) => (
               <SelectItem key={network.id} value={network.id}>
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-accent" />
+                  <img
+                    src={`/images/${network.symbol === "BASE" ? "base.jpeg" : "binance.jpeg"}`}
+                    className="size-4 rounded-full bg-accent"
+                  />
                   <span className="text-primary">{network.name}</span>
                 </div>
               </SelectItem>
