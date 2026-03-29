@@ -502,9 +502,9 @@ const Deposit = memo(function Deposit({
             <h1 className="text-3xl font-semibold">
               {convertedAmount.toFixed(2)} {stablecoinSymbol.toUpperCase()}
             </h1>
-            <Button variant="outline" size="icon-sm">
+            {/*<Button variant="outline" size="icon-sm">
               <Copy className="size-4" />
-            </Button>
+            </Button>*/}
           </div>
           <span className="text-xs font-normal text-center text-muted-foreground">
             ~{amount} {currency}
@@ -669,7 +669,11 @@ const ConfigSelect = memo(function ConfigSelect({
           <SelectTrigger className="h-[2.8rem] w-full border border-border bg-background hover:border-accent transition-colors">
             <div className="flex items-center gap-2 h-full">
               <img
-                src={`/images/${selectedAsset.toUpperCase() === "USDC" ? "usdc.png" : "usdt.svg"}`}
+                src={
+                  selectedAsset.toUpperCase() === "USDC"
+                    ? "https://afsnk.afullsnack.dev/images/usdc.png"
+                    : "https://afsnk.afullsnack.dev/images/usdt.svg"
+                }
                 className="size-4 rounded-full bg-accent"
               />
               <span>{selectedAsset.toUpperCase()}</span>
@@ -687,7 +691,11 @@ const ConfigSelect = memo(function ConfigSelect({
               <SelectItem key={coin.id} value={coin.id}>
                 <div className="flex items-center gap-2">
                   <img
-                    src={`/images/${coin.symbol === "USDC" ? "usdc.png" : "usdt.svg"}`}
+                    src={
+                      coin.symbol === "USDC"
+                        ? "https://afsnk.afullsnack.dev/images/usdc.png"
+                        : "https://afsnk.afullsnack.dev/images/usdt.svg"
+                    }
                     className="size-6 rounded-full bg-accent"
                   />
                   <span className="text-primary">{coin.name}</span>
@@ -710,7 +718,11 @@ const ConfigSelect = memo(function ConfigSelect({
                 return (
                   <div className="flex items-center gap-2">
                     <img
-                      src={`/images/${value === "base" ? "base.jpeg" : "binance.jpeg"}`}
+                      src={
+                        value === "base"
+                          ? "https://afsnk.afullsnack.dev/images/base.jpeg"
+                          : "https://afsnk.afullsnack.dev/images/binance.jpeg"
+                      }
                       className="size-4 rounded-full bg-accent"
                     />
                     <span className="text-primary">
@@ -726,7 +738,11 @@ const ConfigSelect = memo(function ConfigSelect({
               <SelectItem key={network.id} value={network.id}>
                 <div className="flex items-center gap-2">
                   <img
-                    src={`/images/${network.symbol === "BASE" ? "base.jpeg" : "binance.jpeg"}`}
+                    src={
+                      network.symbol === "BASE"
+                        ? "https://afsnk.afullsnack.dev/images/base.jpeg"
+                        : "https://afsnk.afullsnack.dev/images/binance.jpeg"
+                    }
                     className="size-4 rounded-full bg-accent"
                   />
                   <span className="text-primary">{network.name}</span>

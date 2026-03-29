@@ -57,26 +57,6 @@
         {
           "path": "registry/default/afsnk/stablecoin-payment/use-media-query.tsx",
           "type": "registry:hook"
-        },
-        {
-          "path": "public/images/usdc.png",
-          "type": "registry:file",
-          "target": "/public/images/usdc.png"
-        },
-        {
-          "path": "public/images/usdt.svg",
-          "type": "registry:file",
-          "target": "/public/images/usdt.svg"
-        },
-        {
-          "path": "public/images/base.jpeg",
-          "type": "registry:file",
-          "target": "/public/images/base.jpeg"
-        },
-        {
-          "path": "public/images/binance.jpeg",
-          "type": "registry:file",
-          "target": "/public/images/binance.jpeg"
         }
       ]
     }
