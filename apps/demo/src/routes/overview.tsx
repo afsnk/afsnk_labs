@@ -153,8 +153,8 @@ const defaultColumns: Array<ColumnDef<Transaction>> = [
     header: "Explorer",
     cell: ({ row }) => (
       <a href={row.original.network === "bsc"
-        ? `https://bscscan.com/address/${row.original.vAddress}`
-        : `https://basescan.org/address/${row.original.vAddress}`}>{
+        ? `https://bscscan.com/address/${row.original.vAddress}#tokentxns`
+        : `https://basescan.org/address/${row.original.vAddress}#tokentxns`}>{
           row.original.vAddress?.slice(0, 6)}...{row.original.vAddress?.slice(-6)
         }</a>
     ),
