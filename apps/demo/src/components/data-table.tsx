@@ -163,9 +163,6 @@ export function DataTable<T extends GenTableType>({
     }
   }
 
-  useEffect(() => {
-    console.log("Re-render table on pagination", table.getState());
-  });
 
   return (
     <DndContext
@@ -273,7 +270,6 @@ export function TransactionTableCellViewer({
     }
   }, [paymentConfirm.data, paymentConfirm.error]);
 
-  console.log("Item", { item });
 
   return (
     <Drawer direction={isMobile ? "bottom" : "right"}>
