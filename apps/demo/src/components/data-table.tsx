@@ -20,18 +20,17 @@ import {
   IconCircleX,
   IconGripVertical,
   IconLoader,
-  IconTrendingUp,
 } from "@tabler/icons-react";
 import { flexRender } from "@tanstack/react-table";
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  XAxis,
-  Label as ChartLabel,
-  Pie,
-  PieChart,
-} from "recharts";
+// import {
+//   Area,
+//   AreaChart,
+//   CartesianGrid,
+//   XAxis,
+//   Label as ChartLabel,
+//   Pie,
+//   PieChart,
+// } from "recharts";
 import type { z } from "zod";
 
 import type { DragEndEvent, UniqueIdentifier } from "@dnd-kit/core";
@@ -244,7 +243,7 @@ const apiUrl = import.meta.env.DEV
 export function TransactionTableCellViewer({
   item,
 }: {
-  item: ExtendedTransaction;
+  item: Transaction;
 }) {
   const isMobile = useIsMobile();
   const paymentConfirm = useQuery({
@@ -319,7 +318,7 @@ export function TransactionTableCellViewer({
               description={new Intl.DateTimeFormat("en-US", {
                 timeStyle: "medium",
                 dateStyle: "medium",
-              }).format(item.createdAt as Date)}
+              }).format(new Date(item.createdAt!.toString()))}
             />
 
             <h1 className="text-lg font-semibold my-3">Customer data</h1>

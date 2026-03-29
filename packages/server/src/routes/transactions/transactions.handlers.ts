@@ -220,45 +220,6 @@ export const get: AppRouteHandler<GetTransactionRoute> = async (c) => {
       }, HttpStatusCodes.BAD_REQUEST);
     }
 
-    // const tasks = transactions.map<() => Promise<ExtendedTransaction>>(t => async () => {
-    //   if (t.status === "pending") {
-    //     // const balance = await getBalance(t.network, t.metadata.address, t.asset);
-    //     // console.log("Balance", { balance });
-    //     // const hasBalance = Boolean(balance);
-    //     return {
-    //       id: t.id,
-    //       amount: t.amount,
-    //       asset: t.asset,
-    //       callbackUrl: t.callbackUrl,
-    //       merchantMetadata: t.merchantMetadata,
-    //       network: t.network,
-    //       status: t.status,
-    //       reference: t.reference,
-    //       hasBalance: false,
-    //       balance: 0,
-    //       createdAt: t.createdAt,
-    //       updatedAt: t.updatedAt,
-    //     } as unknown as ExtendedTransaction;
-    //   }
-    //   else {
-    //     return {
-    //       id: t.id,
-    //       amount: t.amount,
-    //       asset: t.asset,
-    //       callbackUrl: t.callbackUrl,
-    //       merchantMetadata: t.merchantMetadata,
-    //       network: t.network,
-    //       status: t.status,
-    //       reference: t.reference,
-    //       hasBalance: false,
-    //       balance: 0,
-    //       createdAt: t.createdAt,
-    //       updatedAt: t.updatedAt,
-    //     } as unknown as ExtendedTransaction;
-    //   }
-    // });
-    // const modifiedTransactions: ExtendedTransaction[] = await sequentialMap<ExtendedTransaction>(tasks, 2000);
-    // console.log("Modified transaction", modifiedTransactions);
 
     return c.json(transactions.map(t => ({ ...t, vAddress: t.metadata.address })), HttpStatusCodes.OK);
   }

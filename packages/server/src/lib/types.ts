@@ -18,5 +18,4 @@ export type AppRouteHandler<R extends RouteConfig> = RouteHandler<R, AppBindings
 
 // DB types
 export type Transaction = z.infer<typeof cleanedTransaction>;
-export type ExtendedTransaction = (Transaction & { hasBalance: boolean; balance: string | number });
 export type InsertTransaction = z.infer<typeof insertTransactions>;

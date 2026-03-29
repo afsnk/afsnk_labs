@@ -32,8 +32,6 @@ export const transactions = sqliteTable("transactions", {
 
 export const selectTransactions = toZodV4SchemaTyped(createSelectSchema(transactions));
 export const cleanedTransaction = createSelectSchema(transactions).omit({ metadata: true }).extend({
-  hasBalance: z.boolean().optional(),
-  balance: z.union([z.string(), z.number()]).optional(),
   vAddress: z.string().optional(),
 });
 export const insertTransactions = toZodV4SchemaTyped(createInsertSchema(

@@ -86,7 +86,7 @@ export const TransactionTableContext = createContext<{
   table: TableType<Transaction>;
 }>({ table: {} as any });
 
-const defaultColumns: Array<ColumnDef<ExtendedTransaction>> = [
+const defaultColumns: Array<ColumnDef<Transaction>> = [
   // {
   //   id: 'drag',
   //   header: () => null,
@@ -143,25 +143,12 @@ const defaultColumns: Array<ColumnDef<ExtendedTransaction>> = [
       </Badge>
     ),
   },
-  // {
-  //   accessorKey: "hasBalance",
-  //   header: "Has balance",
-  //   cell: ({ row }) => (
-  //     <Badge variant="outline" className="text-muted-foreground px-1.5">
-  //       {row.original.hasBalance ? (
-  //         <IconCircleCheckFilled className="fill-green-500 dark:fill-green-400" />
-  //       ) : (
-  //         <IconCircleX className="fill-red-500 dark:fill-red-400" />
-  //       )}
-  //       {row.original.hasBalance ? "Paid" : "Not Paid"}
-  //     </Badge>
-  //   ),
-  // },
-  // {
-  //   accessorKey: "balance",
-  //   header: "Balance",
-  //   cell: ({ row }) => <span className="px-1.5">{row.original.balance}</span>,
-  // },
+  {
+    header: "Virtual Address",
+    cell: ({ row }) => (
+      <span>{row.original.vAddress}</span>
+    ),
+  },
   {
     accessorKey: "network",
     header: () => "Network",
@@ -197,7 +184,7 @@ const defaultColumns: Array<ColumnDef<ExtendedTransaction>> = [
         {new Intl.DateTimeFormat("en-US", {
           dateStyle: "long",
           timeStyle: "medium",
-        }).format(new Date(row.original.createdAt))}{" "}
+        }).format(new Date(row.original.createdAt!))}{" "}
       </span>
     ),
   },
@@ -216,7 +203,10 @@ const defaultColumns: Array<ColumnDef<ExtendedTransaction>> = [
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-32">
-          {/*<DropdownMenuItem>Repeat</DropdownMenuItem>*/}
+          <DropdownMenuItem onClick={() => {
+            navigator.clipboard.writeText(row.original.vAddress!)
+            toast.info('Virtual address copied!')
+          }}>Copy address</DropdownMenuItem>
           {/* <DropdownMenuSeparator /> */}
           <DropdownMenuItem
             variant="destructive"
