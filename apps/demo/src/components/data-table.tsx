@@ -20,18 +20,17 @@ import {
   IconCircleX,
   IconGripVertical,
   IconLoader,
-  IconTrendingUp,
 } from "@tabler/icons-react";
 import { flexRender } from "@tanstack/react-table";
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  XAxis,
-  Label as ChartLabel,
-  Pie,
-  PieChart,
-} from "recharts";
+// import {
+//   Area,
+//   AreaChart,
+//   CartesianGrid,
+//   XAxis,
+//   Label as ChartLabel,
+//   Pie,
+//   PieChart,
+// } from "recharts";
 import type { z } from "zod";
 
 import type { DragEndEvent, UniqueIdentifier } from "@dnd-kit/core";
@@ -71,7 +70,7 @@ import {
 
 import { Badge } from "./ui/badge";
 import { Copy } from "lucide-react";
-import type { Transaction } from "@afsnk/pay-server/types";
+import type { ExtendedTransaction, Transaction } from "@afsnk/pay-server/types";
 import { List, ListItem } from "./ui/list";
 import { useQuery } from "@tanstack/react-query";
 import { betterFetch } from "@better-fetch/fetch";
@@ -164,9 +163,6 @@ export function DataTable<T extends GenTableType>({
     }
   }
 
-  useEffect(() => {
-    console.log("Re-render table on pagination", table.getState());
-  });
 
   return (
     <DndContext
@@ -241,7 +237,11 @@ const chartConfig = {
 const apiUrl = import.meta.env.DEV
   ? "http://localhost:9999"
   : "https://afsnk-pay-server.fly.dev";
-export function TransactionTableCellViewer({ item }: { item: Transaction }) {
+export function TransactionTableCellViewer({
+  item,
+}: {
+  item: Transaction;
+}) {
   const isMobile = useIsMobile();
   const paymentConfirm = useQuery({
     queryKey: ["payment", "confirm", item.reference],
@@ -269,6 +269,7 @@ export function TransactionTableCellViewer({ item }: { item: Transaction }) {
       toast.success("Payment confirmed, webhook resent");
     }
   }, [paymentConfirm.data, paymentConfirm.error]);
+
 
   return (
     <Drawer direction={isMobile ? "bottom" : "right"}>
@@ -313,7 +314,7 @@ export function TransactionTableCellViewer({ item }: { item: Transaction }) {
               description={new Intl.DateTimeFormat("en-US", {
                 timeStyle: "medium",
                 dateStyle: "medium",
-              }).format(new Date(item.createdAt))}
+              }).format(new Date(item.createdAt!.toString()))}
             />
 
             <h1 className="text-lg font-semibold my-3">Customer data</h1>
@@ -353,185 +354,185 @@ export function TransactionTableCellViewer({ item }: { item: Transaction }) {
   );
 }
 
-const walletChartData = [
-  { browser: "chrome", visitors: 275, fill: "var(--color-chrome)" },
-  { browser: "safari", visitors: 200, fill: "var(--color-safari)" },
-  { browser: "firefox", visitors: 287, fill: "var(--color-firefox)" },
-  { browser: "edge", visitors: 173, fill: "var(--color-edge)" },
-  { browser: "other", visitors: 190, fill: "var(--color-other)" },
-];
-const walletChartConfig = {
-  visitors: {
-    label: "Visitors",
-  },
-  chrome: {
-    label: "Chrome",
-    color: "var(--chart-1)",
-  },
-  safari: {
-    label: "Safari",
-    color: "var(--chart-2)",
-  },
-  firefox: {
-    label: "Firefox",
-    color: "var(--chart-3)",
-  },
-  edge: {
-    label: "Edge",
-    color: "var(--chart-4)",
-  },
-  other: {
-    label: "Other",
-    color: "var(--chart-5)",
-  },
-} satisfies ChartConfig;
+// const walletChartData = [
+//   { browser: "chrome", visitors: 275, fill: "var(--color-chrome)" },
+//   { browser: "safari", visitors: 200, fill: "var(--color-safari)" },
+//   { browser: "firefox", visitors: 287, fill: "var(--color-firefox)" },
+//   { browser: "edge", visitors: 173, fill: "var(--color-edge)" },
+//   { browser: "other", visitors: 190, fill: "var(--color-other)" },
+// ];
+// const walletChartConfig = {
+//   visitors: {
+//     label: "Visitors",
+//   },
+//   chrome: {
+//     label: "Chrome",
+//     color: "var(--chart-1)",
+//   },
+//   safari: {
+//     label: "Safari",
+//     color: "var(--chart-2)",
+//   },
+//   firefox: {
+//     label: "Firefox",
+//     color: "var(--chart-3)",
+//   },
+//   edge: {
+//     label: "Edge",
+//     color: "var(--chart-4)",
+//   },
+//   other: {
+//     label: "Other",
+//     color: "var(--chart-5)",
+//   },
+// } satisfies ChartConfig;
 
-export function WalletTableCellViewer<DataSchema extends any>({
-  item,
-}: {
-  item: DataSchema;
-}) {
-  const isMobile = useIsMobile();
+// export function WalletTableCellViewer<DataSchema extends any>({
+//   item,
+// }: {
+//   item: DataSchema;
+// }) {
+//   const isMobile = useIsMobile();
 
-  return (
-    <Drawer direction={isMobile ? "bottom" : "right"}>
-      <DrawerTrigger asChild>
-        <Button variant="link" className="text-foreground w-fit px-0 text-left">
-          {item.id.slice(0, 10)}...
-          {item.id.slice(-10)}
-        </Button>
-      </DrawerTrigger>
-      <DrawerContent>
-        <DrawerHeader className="gap-1">
-          <DrawerTitle>
-            Wallet details
-            {item.keyLabel.split(":")[0].includes("master") && (
-              <Badge
-                variant="outline"
-                className="text-muted-foreground px-1.5 mx-auto ml-2"
-              >
-                Master wallet
-              </Badge>
-            )}
-          </DrawerTitle>
-          <DrawerDescription>
-            Showing details for wallet with id: <b>{item.id}</b>
-          </DrawerDescription>
-        </DrawerHeader>
-        <div className="flex flex-col gap-4 overflow-y-auto px-4 text-sm">
-          {!isMobile && (
-            <>
-              <ChartContainer config={walletChartConfig}>
-                <PieChart>
-                  <ChartTooltip
-                    cursor={false}
-                    content={<ChartTooltipContent hideLabel />}
-                  />
-                  <Pie
-                    data={walletChartData}
-                    dataKey="visitors"
-                    nameKey="browser"
-                    innerRadius={60}
-                    strokeWidth={5}
-                  >
-                    <ChartLabel
-                      content={({ viewBox }) => {
-                        if (viewBox && "cx" in viewBox && "cy" in viewBox) {
-                          return (
-                            <text
-                              x={viewBox.cx}
-                              y={viewBox.cy}
-                              textAnchor="middle"
-                              dominantBaseline="middle"
-                            >
-                              <tspan
-                                x={viewBox.cx}
-                                y={viewBox.cy}
-                                className="fill-foreground text-3xl font-bold"
-                              >
-                                {"1000"}
-                              </tspan>
-                              <tspan
-                                x={viewBox.cx}
-                                y={(viewBox.cy || 0) + 24}
-                                className="fill-muted-foreground"
-                              >
-                                Transactions
-                              </tspan>
-                            </text>
-                          );
-                        }
-                      }}
-                    />
-                  </Pie>
-                </PieChart>
-              </ChartContainer>
-              <div className="grid gap-2">
-                {/*<div className="flex gap-2 leading-none font-medium">
-                  Trending up by 5.2% this month{' '}
-                  <IconTrendingUp className="size-4" />
-                </div>*/}
-                <div className="text-muted-foreground">
-                  Showing total transactions for the wallet.
-                </div>
-              </div>
-              <Separator />
-            </>
-          )}
-          <List className="flex flex-col gap-4">
-            <h4 className="text-prose">Addresses</h4>
+//   return (
+//     <Drawer direction={isMobile ? "bottom" : "right"}>
+//       <DrawerTrigger asChild>
+//         <Button variant="link" className="text-foreground w-fit px-0 text-left">
+//           {item.id.slice(0, 10)}...
+//           {item.id.slice(-10)}
+//         </Button>
+//       </DrawerTrigger>
+//       <DrawerContent>
+//         <DrawerHeader className="gap-1">
+//           <DrawerTitle>
+//             Wallet details
+//             {item.keyLabel.split(":")[0].includes("master") && (
+//               <Badge
+//                 variant="outline"
+//                 className="text-muted-foreground px-1.5 mx-auto ml-2"
+//               >
+//                 Master wallet
+//               </Badge>
+//             )}
+//           </DrawerTitle>
+//           <DrawerDescription>
+//             Showing details for wallet with id: <b>{item.id}</b>
+//           </DrawerDescription>
+//         </DrawerHeader>
+//         <div className="flex flex-col gap-4 overflow-y-auto px-4 text-sm">
+//           {!isMobile && (
+//             <>
+//               <ChartContainer config={walletChartConfig}>
+//                 <PieChart>
+//                   <ChartTooltip
+//                     cursor={false}
+//                     content={<ChartTooltipContent hideLabel />}
+//                   />
+//                   <Pie
+//                     data={walletChartData}
+//                     dataKey="visitors"
+//                     nameKey="browser"
+//                     innerRadius={60}
+//                     strokeWidth={5}
+//                   >
+//                     <ChartLabel
+//                       content={({ viewBox }) => {
+//                         if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+//                           return (
+//                             <text
+//                               x={viewBox.cx}
+//                               y={viewBox.cy}
+//                               textAnchor="middle"
+//                               dominantBaseline="middle"
+//                             >
+//                               <tspan
+//                                 x={viewBox.cx}
+//                                 y={viewBox.cy}
+//                                 className="fill-foreground text-3xl font-bold"
+//                               >
+//                                 {"1000"}
+//                               </tspan>
+//                               <tspan
+//                                 x={viewBox.cx}
+//                                 y={(viewBox.cy || 0) + 24}
+//                                 className="fill-muted-foreground"
+//                               >
+//                                 Transactions
+//                               </tspan>
+//                             </text>
+//                           );
+//                         }
+//                       }}
+//                     />
+//                   </Pie>
+//                 </PieChart>
+//               </ChartContainer>
+//               <div className="grid gap-2">
+//                 {/*<div className="flex gap-2 leading-none font-medium">
+//                   Trending up by 5.2% this month{' '}
+//                   <IconTrendingUp className="size-4" />
+//                 </div>*/}
+//                 <div className="text-muted-foreground">
+//                   Showing total transactions for the wallet.
+//                 </div>
+//               </div>
+//               <Separator />
+//             </>
+//           )}
+//           <List className="flex flex-col gap-4">
+//             <h4 className="text-prose">Addresses</h4>
 
-            {item.addresses.map((address) => (
-              <>
-                <ListItem
-                  title={address.network.toUpperCase()}
-                  description={`${address.address.slice(0, 12)}...${address.address.slice(-12)}`}
-                  suffix={
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() =>
-                        navigator.clipboard.writeText(address.address)
-                      }
-                    >
-                      <Copy />
-                    </Button>
-                  }
-                />
-              </>
-            ))}
-          </List>
-          <List className="flex flex-col gap-4">
-            <h4 className="text-prose">Linked Virtual accounts</h4>
+//             {item.addresses.map((address) => (
+//               <>
+//                 <ListItem
+//                   title={address.network.toUpperCase()}
+//                   description={`${address.address.slice(0, 12)}...${address.address.slice(-12)}`}
+//                   suffix={
+//                     <Button
+//                       size="sm"
+//                       variant="ghost"
+//                       onClick={() =>
+//                         navigator.clipboard.writeText(address.address)
+//                       }
+//                     >
+//                       <Copy />
+//                     </Button>
+//                   }
+//                 />
+//               </>
+//             ))}
+//           </List>
+//           <List className="flex flex-col gap-4">
+//             <h4 className="text-prose">Linked Virtual accounts</h4>
 
-            {(item.metadata.linkedVirtualAccounts as any[]).map((account) => (
-              <>
-                <ListItem
-                  title={account.network.toUpperCase()}
-                  description={`${account.accountNumber}`}
-                  suffix={
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() =>
-                        navigator.clipboard.writeText(account.accountNumber)
-                      }
-                    >
-                      <Copy />
-                    </Button>
-                  }
-                />
-              </>
-            ))}
-          </List>
-        </div>
-        <DrawerFooter>
-          <Button>New Transaction</Button>
-          <DrawerClose asChild>
-            <Button variant="outline">Done</Button>
-          </DrawerClose>
-        </DrawerFooter>
-      </DrawerContent>
-    </Drawer>
-  );
-}
+//             {(item.metadata.linkedVirtualAccounts as any[]).map((account) => (
+//               <>
+//                 <ListItem
+//                   title={account.network.toUpperCase()}
+//                   description={`${account.accountNumber}`}
+//                   suffix={
+//                     <Button
+//                       size="sm"
+//                       variant="ghost"
+//                       onClick={() =>
+//                         navigator.clipboard.writeText(account.accountNumber)
+//                       }
+//                     >
+//                       <Copy />
+//                     </Button>
+//                   }
+//                 />
+//               </>
+//             ))}
+//           </List>
+//         </div>
+//         <DrawerFooter>
+//           <Button>New Transaction</Button>
+//           <DrawerClose asChild>
+//             <Button variant="outline">Done</Button>
+//           </DrawerClose>
+//         </DrawerFooter>
+//       </DrawerContent>
+//     </Drawer>
+//   );
+// }

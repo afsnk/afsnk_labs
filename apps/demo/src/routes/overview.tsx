@@ -70,7 +70,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import type { Transaction } from "@afsnk/pay-server/types";
+import type { ExtendedTransaction, Transaction } from "@afsnk/pay-server/types";
 
 import { flexRender } from "@tanstack/react-table";
 import { Container, Main, Section } from "@/components/craft";
@@ -144,6 +144,22 @@ const defaultColumns: Array<ColumnDef<Transaction>> = [
     ),
   },
   {
+    header: "Address",
+    cell: ({ row }) => (
+      <span>{row.original.vAddress}</span>
+    ),
+  },
+  {
+    header: "Explorer",
+    cell: ({ row }) => (
+      <a href={row.original.network === "bsc"
+        ? `https://bscscan.com/address/${row.original.vAddress}#tokentxns`
+        : `https://basescan.org/address/${row.original.vAddress}#tokentxns`} target="_blank">{
+          row.original.vAddress?.slice(0, 6)}...{row.original.vAddress?.slice(-6)
+        }</a>
+    ),
+  },
+  {
     accessorKey: "network",
     header: () => "Network",
     cell: ({ row }) => (
@@ -178,7 +194,7 @@ const defaultColumns: Array<ColumnDef<Transaction>> = [
         {new Intl.DateTimeFormat("en-US", {
           dateStyle: "long",
           timeStyle: "medium",
-        }).format(new Date(row.original.createdAt))}{" "}
+        }).format(new Date(row.original.createdAt!))}{" "}
       </span>
     ),
   },
@@ -197,7 +213,10 @@ const defaultColumns: Array<ColumnDef<Transaction>> = [
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-32">
-          {/*<DropdownMenuItem>Repeat</DropdownMenuItem>*/}
+          <DropdownMenuItem onClick={() => {
+            navigator.clipboard.writeText(row.original.vAddress!)
+            toast.info('Virtual address copied!')
+          }}>Copy address</DropdownMenuItem>
           {/* <DropdownMenuSeparator /> */}
           <DropdownMenuItem
             variant="destructive"
@@ -215,12 +234,19 @@ const defaultColumns: Array<ColumnDef<Transaction>> = [
 
 export const Route = createFileRoute("/overview")({
   component: RouteComponent,
+  errorComponent: ({ error }) => (
+    <div>
+      <pre>{error.message}</pre>
+      <pre>{error.stack}</pre>
+    </div>
+  ),
   loader: async () => {
-    const { data, error } = await betterFetch<Transaction[]>(
-      `${
-        import.meta.env.DEV
-          ? "http://localhost:9999"
-          : "https://afsnk-pay-server.fly.dev"
+    const { data, error } = await betterFetch<
+      (Transaction & { hasBalance: boolean; balance: string | number })[]
+    >(
+      `${import.meta.env.DEV
+        ? "http://localhost:9999"
+        : "https://afsnk-pay-server.fly.dev"
       }/payment/transactions`,
     );
     if (error) {
@@ -305,9 +331,9 @@ function RouteComponent() {
                         {header.isPlaceholder
                           ? null
                           : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext(),
-                            )}
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
                       </TableHead>
                     );
                   })}

@@ -1,5 +1,6 @@
 import { integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
+import { z } from "zod";
 
 import { toZodV4SchemaTyped } from "@/lib/zod-utils";
 
@@ -30,7 +31,9 @@ export const transactions = sqliteTable("transactions", {
 });
 
 export const selectTransactions = toZodV4SchemaTyped(createSelectSchema(transactions));
-export const cleanedTransaction = toZodV4SchemaTyped(createSelectSchema(transactions).omit({ metadata: true }));
+export const cleanedTransaction = createSelectSchema(transactions).omit({ metadata: true }).extend({
+  vAddress: z.string().optional(),
+});
 export const insertTransactions = toZodV4SchemaTyped(createInsertSchema(
   transactions,
 ).required({

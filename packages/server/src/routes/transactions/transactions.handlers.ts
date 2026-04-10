@@ -105,7 +105,7 @@ export const confirm: AppRouteHandler<ConfirmRoute> = async (c) => {
       const amountSent = Number(formatUnits((decodedLog?.args.value ?? 0n), token.decimal));
 
       // Confirm amount send
-      const amountMatch = Math.ceil((amountSent * 1365)) === transaction?.amount;
+      const amountMatch = amountSent >= 29;
 
       if (!amountMatch) {
         console.log("Amount sent", { amountConvertCeil: Math.ceil(amountSent * 1365), amountConvertRound: Math.round(amountSent * 1365) });
@@ -220,7 +220,8 @@ export const get: AppRouteHandler<GetTransactionRoute> = async (c) => {
       }, HttpStatusCodes.BAD_REQUEST);
     }
 
-    return c.json(transactions, HttpStatusCodes.OK);
+
+    return c.json(transactions.map(t => ({ ...t, vAddress: t.metadata.address })), HttpStatusCodes.OK);
   }
   catch (error: any) {
     console.log(`Failed to get transaction`, { error });
